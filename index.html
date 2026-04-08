@@ -16,7 +16,7 @@ canvas{max-width:100%;height:auto;image-rendering:pixelated;border-radius:6px;bo
 <script>
 const C=document.getElementById('c'),X=C.getContext('2d');
 C.width=800;C.height=300;
-const W=800,H=300,GND=245,GRV=.85,JMP=-14,SPD=4.5,PW=28,PH=50,PX=90;
+const W=800,H=300,GND=245,GRV=.85,JMP=-14,SPD=3.5,PW=28,PH=50,PX=90;
 const PAL=[
  {sky1:'#6EC6FF',sky2:'#D4EEFF',gnd:'#8B7B5E',gndD:'#6B5B3E',tile:'#7B6B4E'},
  {sky1:'#FFDCA8',sky2:'#FFE8C8',gnd:'#D4845A',gndD:'#B06830',tile:'#C07848'}
@@ -96,20 +96,20 @@ function dIntro(){
 // GAME OVER
 function dOver(){X.fillStyle='rgba(26,26,46,.75)';X.fillRect(0,0,W,H);X.textAlign='center';X.font='bold 28px monospace';X.fillStyle='#EF5350';X.fillText('You forgot to eat.',W/2,80);X.font='bold 18px monospace';X.fillStyle='#FFCA28';X.fillText('Ibo, get the menemen now!',W/2,110);X.font='bold 16px monospace';X.fillStyle='#fff';X.fillText('SCORE: '+G.score,W/2,150);X.fillStyle='#FFD54F';X.fillText('HIGH SCORE: '+G.hi,W/2,172);X.font='16px monospace';X.fillStyle='#B0BEC5';X.fillText('🥚 ×'+G.egg+'    🍅 ×'+G.tom+'    🌶️ ×'+G.pep,W/2,204);if(G.combo){X.fillStyle='#FFCA28';X.font='bold 14px monospace';X.fillText('🎉 MENEMEN COMBO! +50',W/2,228)}if(Math.sin(Date.now()*.005)>.2){X.font='bold 13px monospace';X.fillStyle='#fff';X.fillText('Press SPACE or Tap to Restart',W/2,268)}}
 function spO(){const t=Math.random()<.4?0:Math.random()<.5?1:2;G.obs.push({x:W+10,type:t,w:[48,30,34][t],h:[22,36,26][t]})}
-function spC(){const t=Math.floor(Math.random()*3);G.col.push({x:W+10,y:[GND-10,GND-35,GND-65,GND-90][Math.floor(Math.random()*4)],type:t})}
+function spC(){const t=Math.floor(Math.random()*3);G.col.push({x:W+10,y:[GND-15,GND-30,GND-50,GND-70][Math.floor(Math.random()*4)],type:t})}
 function col(c){if(c.type===0){G.egg++;G.hE=true;G.score+=10}else if(c.type===1){G.tom++;G.hT=true;G.score+=15}else{G.pep++;G.hP=true;G.score+=20}aP(c.x,c.y,8,c.type===0?'#FFFDE7':c.type===1?'#EF5350':'#66BB6A',4);sC();if(!G.combo&&G.hE&&G.hT&&G.hP){G.combo=true;G.cf=90;G.score+=50;G.sc=1;aP(PX,G.y-PH/2,20,'#FFD54F',6);sK()}}
 function die(){G.phase=2;G.dieT=0;G.shake=6;if(G.score>G.hi){G.hi=G.score;sHi()}sD()}
 function update(){
- if(G.phase===0){G.it++;G.bx+=.5;G.bx2+=1;const dur=[90,90,70,70,60,80,1e9];if(G.it>=dur[G.is]&&G.is<6){G.is++;G.it=0}return}
+ if(G.phase===0){G.it++;G.bx+=.5;G.bx2+=1;const dur=[140,140,110,110,90,120,1e9];if(G.it>=dur[G.is]&&G.is<6){G.is++;G.it=0}return}
  if(G.phase===2){G.dieT++;G.spd*=.92;G.bx+=G.spd*.35;G.bx2+=G.spd;for(let i=G.obs.length-1;i>=0;i--)G.obs[i].x-=G.spd;uP();if(G.shake>.3)G.shake*=.8;else G.shake=0;if(G.dieT>=40){G.phase=3;G.overT=Date.now();G.spd=0}return}
  if(G.phase!==1)return;
  G.f++;G.walkF++;if(G.spd<SPD*2)G.spd+=.003;else G.spd+=.0006;G.score+=1;
  if(G.y<GND)G.vy+=GRV;G.y+=G.vy;if(G.y>=GND){G.y=GND;G.vy=0}
  G.bx+=G.spd*.35;G.bx2+=G.spd;
  G.ot--;if(G.ot<=0){spO();G.ot=Math.max(35,80+Math.random()*60-G.spd*6)}
- G.ct--;if(G.ct<=0){spC();G.ct=70+Math.random()*50}
+ G.ct--;if(G.ct<=0){spC();G.ct=45+Math.random()*35}
  for(let i=G.obs.length-1;i>=0;i--){G.obs[i].x-=G.spd;if(G.obs[i].x<-60)G.obs.splice(i,1)}
- for(let i=G.col.length-1;i>=0;i--){G.col[i].x-=G.spd;if(G.col[i].x<-20){G.col.splice(i,1);continue}const c=G.col[i],dx=PX-c.x,dy=(G.y-PH/2)-c.y;if(dx*dx+dy*dy<22*22){col(c);G.col.splice(i,1)}}
+ for(let i=G.col.length-1;i>=0;i--){G.col[i].x-=G.spd;if(G.col[i].x<-20){G.col.splice(i,1);continue}const c=G.col[i],dx=PX-c.x,dy=(G.y-PH/2)-c.y;if(dx*dx+dy*dy<32*32){col(c);G.col.splice(i,1)}}
  const ph=G.crouching?30:PH,px=PX-PW/2+4,py=G.y-ph+4,pw=PW-8,ppH=ph-6;
  for(const o of G.obs){if(ab(px,py,pw,ppH,o.x+3,GND-o.h+3,o.w-6,o.h-3)){die();return}}
  uP();if(G.sc===1){G.st+=.018;if(G.st>=1){G.st=1;G.sc=2}}if(G.cf>0)G.cf--}
