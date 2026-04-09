@@ -4,15 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Menemen 2: Ocean Descent</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;background:#020b14;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;user-select:none;font-family:monospace}
-canvas{max-width:100%;height:auto;max-height:100vh;image-rendering:pixelated;border-radius:6px;box-shadow:0 0 40px rgba(0,100,200,.4)}
+html,body{width:100%;height:100%;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;user-select:none;font-family:'Press Start 2P', cursive}
+canvas{max-width:100%;height:auto;max-height:100vh;image-rendering:pixelated;border:4px solid #333;box-shadow:0 0 40px rgba(0,180,255,.3)}
+
+/* CRT Overlay */
+body::before {
+    content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
+    z-index: 100; background-size: 100% 4px, 6px 100%; pointer-events: none;
+}
+
 #ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100}
-#btn1, #btnStart{pointer-events:auto;display:none;margin-top:20px;padding:10px 30px;background:#FFCA28;color:#1a1a2e;text-decoration:none;font-weight:bold;border-radius:20px;border:2px solid #FF6F00;cursor:pointer;font-family:inherit;font-size:18px;transition:transform 0.2s}
+#btn1, #btnStart{pointer-events:auto;display:none;margin-top:20px;padding:12px 24px;background:#FFEA00;color:#000;text-decoration:none;font-weight:bold;border:4px solid #fff;cursor:pointer;font-family:inherit;font-size:14px;transition:transform 0.1s;box-shadow:6px 6px 0 rgba(0,0,0,0.4)}
 #btnStart{display:block;margin-top:0}
-#btnStart:hover{transform:scale(1.1)}
-#btn1{margin-top:140px;padding:8px 16px;font-size:14px;background:rgba(255,100,0,0.4);color:#fff;border-color:rgba(255,255,255,0.2)}
+#btnStart:hover, #btn1:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 rgba(0,0,0,0.5)}
+#btn1{margin-top:140px;background:rgba(255,100,0,0.8);color:#fff;border-color:rgba(255,255,255,0.5)}
 </style>
 </head>
 <body>
@@ -29,8 +38,27 @@ const GRV=.35,JMP=-10,SPD=1.2,PW=28,PH=50;
 
 let AC=null;
 function iA(){if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
-function tn(f1,f2,d,v){if(!AC)return;try{const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);o.type='sine';o.frequency.setValueAtTime(f1,AC.currentTime);o.frequency.linearRampToValueAtTime(f2,AC.currentTime+d);g.gain.setValueAtTime(v||.12,AC.currentTime);g.gain.linearRampToValueAtTime(0,AC.currentTime+d);o.start();o.stop(AC.currentTime+d)}catch(e){}}
-const sJ=()=>tn(200,400,.1),sC=()=>tn(400,600,.1,.1),sK=()=>{tn(300,500,.2,.15);tn(400,800,.15,.1)},sD=()=>tn(200,50,.3,.2);
+function tn(f1,f2,d,v,t='sine'){if(!AC)return;try{const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);o.type=t;o.frequency.setValueAtTime(f1,AC.currentTime);o.frequency.linearRampToValueAtTime(f2,AC.currentTime+d);g.gain.setValueAtTime(v||.12,AC.currentTime);g.gain.linearRampToValueAtTime(0,AC.currentTime+d);o.start();o.stop(AC.currentTime+d)}catch(e){}}
+const sJ=()=>tn(200,400,.1,.1,'square'),sC=()=>tn(400,600,.1,.15,'square'),sK=()=>{tn(300,500,.2,.1,'sawtooth');tn(400,800,.15,.1,'triangle')},sD=()=>tn(200,50,.3,.2,'sawtooth');
+
+// Metallic Background Beat
+let nextBeat = 0, beatIdx = 0;
+function playMusic(){
+  if(!AC || G.phase !== 2) return;
+  if(AC.currentTime > nextBeat){
+    const freq = [82, 82, 123, 82, 164, 82, 123, 110][beatIdx % 8];
+    const mod = beatIdx % 4 === 0 ? 1 : 0.6;
+    // Metallic FM Synth Pluck (Underwater vibe)
+    const o = AC.createOscillator(), g = AC.createGain(), m = AC.createOscillator(), mg = AC.createGain();
+    o.type = 'square'; m.type = 'sine'; m.frequency.value = freq * 1.6; mg.gain.value = 150;
+    m.connect(mg); mg.connect(o.frequency); o.connect(g); g.connect(AC.destination);
+    o.frequency.setValueAtTime(freq, AC.currentTime);
+    g.gain.setValueAtTime(0.03 * mod, AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + 0.3);
+    o.start(); m.start(); o.stop(AC.currentTime + 0.3); m.stop(AC.currentTime + 0.3);
+    nextBeat = AC.currentTime + 0.25; beatIdx++;
+  }
+}
 
 let G;
 function lHi(){try{return parseInt(localStorage.getItem('menemen2Hi'))||0}catch(e){return 0}}
@@ -265,15 +293,13 @@ function update(){
 }
 
 function dHUD(){
-  X.font='bold 16px monospace';X.textAlign='left';X.fillStyle='rgba(255,255,255,.5)';X.fillText('DEPTH',12,22);X.fillStyle='#FFF';X.fillText(Math.floor(G.score)+'m',12,40);
-  X.textAlign='right';X.fillStyle='rgba(255,255,255,.5)';X.fillText('DEEPEST',W-12,22);X.fillStyle='#FFD54F';X.fillText(Math.floor(G.hi)+'m',W-12,40);
-  for(let i=0;i<3;i++){X.fillStyle=i<G.lives?'#E53935':'rgba(255,255,255,.2)';const hx=W/2-22+i*22,hy=14;X.beginPath();X.moveTo(hx,hy+5);X.bezierCurveTo(hx-8,hy-2,hx-8,hy-8,hx,hy-3);X.bezierCurveTo(hx+8,hy-8,hx+8,hy-2,hx,hy+5);X.fill()}
-  X.textAlign='left';X.font='bold 12px monospace';const ix=12,iy=58;
-  // Sea Icons for HUD
-  X.fillStyle='#E3F2FD';X.fillText(G.egg>0?'✓':'○',ix,iy);X.fillText('🦑'+G.egg,ix+14,iy);
-  X.fillStyle='#EF5350';X.fillText(G.tom>0?'✓':'○',ix+62,iy);X.fillText('🍅'+G.tom,ix+76,iy);
-  X.fillStyle='#66BB6A';X.fillText(G.pep>0?'✓':'○',ix+124,iy);X.fillText('🌱'+G.pep,ix+138,iy)
-}
+  X.font='bold 10px "Press Start 2P"';X.textAlign='left';X.fillStyle='rgba(255,255,255,.3)';X.fillText('DEPTH',12,22);X.fillStyle='#FFF';X.fillText(Math.floor(G.score)+'m',12,40);
+  X.textAlign='right';X.fillStyle='rgba(255,255,255,.3)';X.fillText('DEEPEST',W-12,22);X.fillStyle='#FFD54F';X.fillText(Math.floor(G.hi)+'m',W-12,40);
+  for(let i=0;i<3;i++){X.fillStyle=i<G.lives?'#FF1744':'rgba(255,255,255,.1)';const hx=W/2-30+i*30,hy=14;X.beginPath();X.moveTo(hx,hy+5);X.bezierCurveTo(hx-10,hy-5,hx-10,hy-15,hx,hy-8);X.bezierCurveTo(hx+10,hy-15,hx+10,hy-5,hx,hy+5);X.fill()}
+  X.textAlign='left';const ix=12,iy=62;
+  X.fillStyle=G.egg>0?'#FFFF00':'rgba(255,255,255,.2)';X.fillText('🥚'+G.egg,ix,iy);
+  X.fillStyle=G.tom>0?'#FF3D00':'rgba(255,255,255,.2)';X.fillText('🍅'+G.tom,ix+70,iy);
+  X.fillStyle=G.pep>0?'#00E676':'rgba(255,255,255,.2)';X.fillText('🌶'+G.pep,ix+140,iy)}
 
 function dStory(){
   const f=Math.min(1,G.it/20);X.globalAlpha=f;
@@ -350,17 +376,18 @@ function frame(){
  X.restore();
   if(G.phase===3){
    X.fillStyle=`rgba(0,0,0,${Math.min(0.8,G.dieT/40*0.8)})`;X.fillRect(0,0,W,H);
-   X.textAlign='center';X.font='bold 28px monospace';X.fillStyle='#EF5350';X.fillText('CRUSHED!',W/2,H/2-80);
-   X.font='bold 16px monospace';X.fillStyle='#fff';X.fillText('DEPTH: '+Math.floor(G.score)+'m',W/2,H/2-40);
+   X.textAlign='center';X.font='bold 22px "Press Start 2P"';X.fillStyle='#EF5350';X.fillText('CRUSHED!',W/2,H/2-80);
+   X.font='bold 12px "Press Start 2P"';X.fillStyle='#fff';X.fillText('DEPTH: '+Math.floor(G.score)+'m',W/2,H/2-40);
    
    if(G.dieT > 60){
-     X.font='italic 18px Georgia,serif';X.fillStyle='#FFCA28';
+     X.font='italic 12px "Press Start 2P"';X.fillStyle='#FFEA00';
      X.fillText('Ibo, where is the menemen?', W/2, H/2+20);
    }
 
-   if(Math.sin(Date.now()*.005)>.2){X.font='bold 13px monospace';X.fillStyle='#fff';X.fillText('Press ANY KEY to Restart',W/2,H/2+60)}
+   if(Math.sin(Date.now()*.005)>.2){X.font='bold 10px "Press Start 2P"';X.fillStyle='#fff';X.fillText('Press ANY KEY to Restart',W/2,H/2+60)}
   }
  requestAnimationFrame(frame);
+ playMusic();
 }
 
 function handleK(e,v){
