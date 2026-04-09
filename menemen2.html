@@ -276,25 +276,44 @@ function dHUD(){
 }
 
 function dStory(){
- const f=Math.min(1,G.it/20);X.globalAlpha=f;
-  X.font='italic 15px Georgia,serif';X.fillStyle='#B0BEC5';X.fillText('The next day...',W/2,H/2-100);
+  const f=Math.min(1,G.it/20);X.globalAlpha=f;
   
-  // Persistent characters
-  dChar(true, W/2-60, H/2+50); // Iggy (Polish)
-  X.save();X.translate(W,0);X.scale(-1,1);dChar(false, W/2-60, H/2+50);X.restore(); // Ibo (Turkish)
+  // Background/Contrast layer for text
+  X.fillStyle = 'rgba(0,0,0,0.1)';
+  X.fillRect(0, H/2-140, W, 120);
+
+  // Arcade Platform / Pier by the sea
+  X.fillStyle = '#5D4037'; // Dark wood
+  X.fillRect(0, H/2+100, W, 40);
+  X.fillStyle = '#8B5A2B'; // Light wood planks
+  for(let i=0; i<10; i++) X.fillRect(i*50, H/2+100, 48, 10);
+  
+  X.textAlign='center';
+  X.font='italic 16px Georgia,serif';
+  X.fillStyle='#37474F'; // Darker text
+  X.fillText('The next day...',W/2,H/2-110);
+  
+  // Characters standing on the new platform
+  dChar(true, W/2-70, H/2+100); // Iggy (Polish)
+  X.save();X.translate(W,0);X.scale(-1,1);dChar(false, W/2-70, H/2+100);X.restore(); // Ibo (Turkish)
   
   const ms=[{w:0,t:'"I\'m hungry..."'},{w:1,t:'"I\'ve got an idea!"'},{w:0,t:'"Menemen?"'},{w:1,t:'"MENEMEN!"',b:1}];
   for(let m=0;m<ms.length;m++){
     const threshold = 80 + m*80;
     if(G.is>0 || G.it > threshold){
       const mg=ms[m];
-      X.font=mg.b?'bold 22px monospace':'14px monospace';
-      X.fillStyle=mg.w===0?'#FFCA28':'#FFF';
+      X.font=mg.b?'bold 22px monospace':'16px monospace';
+      
+      // Text Shadow for visibility
+      X.shadowColor = 'rgba(0,0,0,0.5)';
+      X.shadowBlur = 4;
+      X.fillStyle=mg.w===0?'#FFCA28':'#FFFFFF';
       X.textAlign=mg.w===0?'right':'left';
-      X.fillText(mg.t,mg.w===0?W/2-20:W/2+20,H/2-30+m*25);
+      X.fillText(mg.t,mg.w===0?W/2-30:W/2+30,H/2-70+m*30);
+      X.shadowBlur = 0; // Reset shadow
     }
   }
- X.globalAlpha=1;
+  X.globalAlpha=1;
 }
 
 function dInstr(){
