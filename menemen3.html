@@ -22,12 +22,64 @@ body::before {
 #btnStart{display:block;margin-top:0}
 #btnStart:hover, #btn1:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 rgba(0,0,0,0.5)}
 #btn1{margin-top:140px;background:rgba(156,39,176,0.8);color:#fff;border-color:rgba(255,255,255,0.5)}
+
+/* Star Wars Crawl Styles */
+#introContainer {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    display: none;
+    justify-content: center;
+    overflow: hidden;
+    perspective: 400px;
+    z-index: 150;
+    pointer-events: none;
+}
+
+#crawlContent {
+    position: relative;
+    top: 100%;
+    width: 80%;
+    margin: 0 auto;
+    text-align: center;
+    color: #feda4a;
+    font-size: 140%;
+    font-weight: bold;
+    line-height: 1.5;
+    transform: rotateX(25deg);
+    animation: crawl 45s linear;
+}
+
+@keyframes crawl {
+    0% { top: 100%; }
+    100% { top: -250%; }
+}
+
+#crawlContent h2 {
+    font-size: 1.8rem;
+    margin-bottom: 2rem;
+    text-shadow: 2px 2px #000;
+}
+
+#crawlContent p {
+    margin-bottom: 1.5rem;
+    text-shadow: 1px 1px #000;
+}
 </style>
 </head>
 <body>
 <div id="ui">
    <button id="btnStart" onclick="startStory()">START GAME</button>
    <a id="btn1" href="index.html">RETURN TO HUB</a>
+ </div>
+ <div id="introContainer">
+    <div id="crawlContent">
+        <p>A long time ago in a kitchen far, far away...</p>
+        <h2>EPISODE III:<br>THE MENEMEN CONQUEST</h2>
+        <p>It is a period of culinary unrest. IGGY and IBO, the galaxy's bravest chefs, have launched into deep space to escape the hunger that plagues the outer rim.</p>
+        <p>Their mission: to conquer the legendary Menemen sectors and harvest the ingredients for the Ultimate Feast.</p>
+        <p>But their journey is fueled by more than just hunger. They search for a MYSTERIOUS GIRL, the keeper of the Secret Sizzle, who vanished into the Spicy Nebula.</p>
+        <p>Only by harvesting the stars can they find her and fulfill their destiny...</p>
+    </div>
  </div>
 <canvas id="c"></canvas>
 <script>
@@ -340,22 +392,8 @@ function dHUD(){
 }
 
 function dStory(){
-  const f=Math.min(1,G.it/20);X.globalAlpha=f;
-  X.textAlign='center';
-  X.font='italic 16px Georgia,serif';
-  X.fillStyle='#B39DDB';
-  if(G.is===0){
-    X.fillText('Into the unknown...',W/2,H/2-30);
-    X.fillText('The universe hungers.',W/2,H/2+10);
-  } else {
-    X.fillStyle='#FFCA28';
-    X.font='bold 22px monospace';
-    X.fillText('"GALACTIC MENEMEN!"',W/2,H/2-20);
-    X.font='12px monospace';
-    X.fillStyle='#FFF';
-    X.fillText('Harvest the stars.',W/2,H/2+20);
-  }
-  X.globalAlpha=1;
+  // The story is now handled by the CSS crawl overlay.
+  // We just keep the space background drawing.
 }
 
 function dInstr(){
@@ -427,8 +465,9 @@ function frame(){
 
 function handleK(e,v){
   if(['Space','ArrowUp','KeyW'].includes(e.code)) { 
-    if(v && G.phase===-1) { iA(); G.phase=0; document.getElementById('btnStart').style.display='none'; }
-    else if(v && G.phase===3 && G.dieT>30) { reset(); document.getElementById('btn1').style.display='none'; G.phase=0; }
+    if(v && G.phase===-1) { iA(); startStory(); }
+    else if(v && G.phase===0) { startLevel(); }
+    else if(v && G.phase===3 && G.dieT>30) { reset(); document.getElementById('btn1').style.display='none'; startStory(); }
     else G.keys.shoot=v; 
     e.preventDefault(); 
   }
@@ -439,8 +478,9 @@ document.addEventListener('keydown',e=>handleK(e,1));
 document.addEventListener('keyup',e=>handleK(e,0));
 C.addEventListener('touchstart',e=>{
   e.preventDefault(); iA();
-  if(G.phase===-1) { G.phase=0; document.getElementById('btnStart').style.display='none'; }
-  else if(G.phase===3 && G.dieT>30) { reset(); document.getElementById('btn1').style.display='none'; G.phase=0; }
+  if(G.phase===-1) { document.getElementById('btnStart').style.display='none'; startStory(); }
+  else if(G.phase===0) { startLevel(); }
+  else if(G.phase===3 && G.dieT>30) { reset(); document.getElementById('btn1').style.display='none'; startStory(); }
   else {
     G.keys.shoot=1; // auto shoot on touch
     if(e.touches[0].clientX < window.innerWidth/2) G.keys.l=1;
@@ -453,6 +493,16 @@ function startStory(){
   iA();
   G.phase=0;
   document.getElementById('btnStart').style.display='none';
+  document.getElementById('introContainer').style.display = 'flex';
+  // Fade out intro after 45s or skip by clicking
+  setTimeout(() => {
+    if(G.phase === 0) startLevel();
+  }, 45000);
+}
+
+function startLevel() {
+    document.getElementById('introContainer').style.display = 'none';
+    G.phase = 1;
 }
 
 reset();frame();
