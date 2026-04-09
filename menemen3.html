@@ -129,7 +129,8 @@ function reset(){
    egg:0, tom:0, pep:0, combo:false, cf:0,
    lives:3, iframes:0, htf:0,
    shake:0, overT:0, keys:{l:0,r:0,shoot:0},
-   shootDelay:0, spawnTimer:60, diff:1
+   shootDelay:0, spawnTimer:60, diff:1,
+   bossActive:false, bossHP:0, bossMaxHP:25, bossX:W/2, bossDir:1, nextBoss:2000
   };
   for(let i=0;i<80;i++) G.stars.push({x:Math.random()*W,y:Math.random()*H,s:Math.random(),v:Math.random()*2+0.5});
 }
@@ -226,14 +227,23 @@ function drawEnemy(e){
     X.beginPath();X.arc(-5,-5,4,0,Math.PI*2);X.fill();
     X.beginPath();X.arc(8,6,6,0,Math.PI*2);X.fill();
   } else { // Alien Shooter ship
-    X.fillStyle='#9C27B0';
-    X.beginPath();X.moveTo(-22,-10);X.lineTo(22,-10);X.lineTo(0,18);X.fill();
-    X.fillStyle='#E040FB';
-    X.beginPath();X.moveTo(-15,-10);X.lineTo(15,-10);X.lineTo(0,12);X.fill();
-    X.fillStyle='#76FF03';
-    X.beginPath();X.arc(0,-4,8,0,Math.PI*2);X.fill();
     X.fillStyle='#311B92';
     X.fillRect(-18,-15,6,10); X.fillRect(12,-15,6,10);
+  } else if(e.type===2){ // SPACE MAFIA BOSS
+    // Large Cigar-Shaped Cruise Saucer
+    X.fillStyle='#212121'; // Dark metal
+    X.beginPath();X.ellipse(0,0,80,30,0,0,Math.PI*2);X.fill();
+    X.fillStyle='#424242'; // Highlight
+    X.beginPath();X.ellipse(0,-10,70,15,0,0,Math.PI*2);X.fill();
+    // Neon Pinstripes
+    X.strokeStyle='#E040FB';X.lineWidth=2;
+    X.beginPath();X.moveTo(-60,5);X.lineTo(60,5);X.stroke();
+    X.beginPath();X.moveTo(-50,15);X.lineTo(50,15);X.stroke();
+    // Mafia Boss Windows / Eyes
+    X.fillStyle='#76FF03';
+    for(let i=-2;i<=2;i++){ 
+      X.beginPath();X.arc(i*25,-5,6,0,Math.PI*2);X.fill(); 
+    }
   }
   X.restore();
 }
@@ -286,9 +296,10 @@ function update(){
   
   // Entity Spawning
   G.spawnTimer--;
-  if(G.spawnTimer<=0){
+  if(G.spawnTimer<=0 && !G.bossActive){
     G.spawnTimer = 60/G.diff + Math.random()*30;
-    const isAlien = Math.random() < 0.45; // 45% alien, 55% asteroid
+    if(G.score >= G.nextBoss){ spawnBoss(); return; }
+    const isAlien = Math.random() < 0.45;
     G.enemies.push({
       x: 30+Math.random()*(W-60), y:-30, 
       type: isAlien?1:0, 
@@ -303,36 +314,41 @@ function update(){
   for(let i=G.bullets.length-1;i>=0;i--){
     const b = G.bullets[i];
     b.y += b.vy;
-    if(b.y<-20 || b.y>H+20){ G.bullets.splice(i,1); continue; }
+    if(b.y<-40 || b.y>H+40){ G.bullets.splice(i,1); continue; }
     
     // Player hits enemies
     if(!b.e){
       let hit = false;
       for(let j=G.enemies.length-1;j>=0;j--){
         const e = G.enemies[j];
-        if(ab(b.x-2,b.y-8,4,16, e.x-20,e.y-20,40,40)){
+        const ew = e.type===2?80:20, eh=e.type===2?30:20;
+        if(ab(b.x-2,b.y-8,4,16, e.x-ew,e.y-eh,ew*2,eh*2)){
           hit = true; e.hp--;
-          aP(b.x,b.y,4,'#00E5FF',2);
+          if(e.type===2) G.bossHP = e.hp;
+          aP(b.x,b.y,4,e.type===2?'#E040FB':'#00E5FF',2);
           if(e.hp<=0){
-            G.score += e.type===1?30:15;
-            aP(e.x,e.y,20,e.type===1?'#E040FB':'#5D4037',5);
+            G.score += e.type===2?1000:e.type===1?30:15;
+            aP(e.x,e.y,e.type===2?60:20,e.type===2?'#76FF03':'#5D4037',6);
             sExp();
-            // Drop Ingredient? 35% chance
-            if(Math.random()<0.35) G.drops.push({x:e.x,y:e.y,vy:2.5,type:Math.floor(Math.random()*3)});
-            // Heal? 3% chance if lives < 3
-            if(Math.random()<0.03 && G.lives<3) G.drops.push({x:e.x,y:e.y,vy:2.5,type:3});
-            
+            if(e.type===2){ 
+              G.bossActive=false; G.nextBoss += 2500; G.diff += 0.5;
+              // HUGE FRUIT EXPLOSION
+              for(let k=0;k<12;k++)G.drops.push({x:e.x+(Math.random()-0.5)*100,y:e.y+(Math.random()-0.5)*40,vy:1.2,type:k%3});
+            } else {
+              if(Math.random()<0.35) G.drops.push({x:e.x,y:e.y,vy:1.5,type:Math.floor(Math.random()*3)});
+            }
+            if(Math.random()<0.03 && G.lives<3) G.drops.push({x:e.x,y:e.y,vy:1.5,type:3});
             G.enemies.splice(j,1);
           } else {
-            tn(300,400,.05,.05); // Hit sound
+            tn(e.type===2?200:300,400,.05,.05);
           }
           break;
         }
       }
       if(hit) G.bullets.splice(i,1);
     } else {
-      // Enemy hits player
-      if(G.iframes<=0 && ab(b.x-3,b.y-8,6,16, G.x-15,G.y-15,30,30)){
+      // Enemy hits player (Smaller Hitbox: 16x16 instead of 30x30)
+      if(G.iframes<=0 && ab(b.x-3,b.y-8,6,16, G.x-8,G.y-8,16,16)){
         playerHit(); G.bullets.splice(i,1);
       }
     }
@@ -341,36 +357,61 @@ function update(){
   // Update Enemies
   for(let i=G.enemies.length-1;i>=0;i--){
     const e = G.enemies[i];
-    e.y += e.vy;
-    if(e.type===0) e.rot += 0.05; // Asteroid spin
-    
-    if(e.type===1){ // Alien shoots
+    if(e.type===2){ // Boss movement
+      e.x += e.vx; if(e.x<80||e.x>W-80){ e.vx *= -1; }
+      if(e.y < 80) e.y += 0.5;
       e.shootTimer--;
       if(e.shootTimer<=0){
-        e.shootTimer = 120/G.diff + Math.random()*60;
-        G.bullets.push({x:e.x,y:e.y+15,vy:6*Math.min(G.diff,2),e:true});
+        e.shootTimer = 45;
+        // Spread shots
+        for(let s=-1;s<=1;s++) G.bullets.push({x:e.x+s*30,y:e.y+20,vy:4.5,e:true});
         sELaser();
+      }
+    } else {
+      e.y += e.vy;
+      if(e.type===0) e.rot += 0.05;
+      if(e.type===1){
+        e.shootTimer--;
+        if(e.shootTimer<=0){
+          e.shootTimer = 120/G.diff + Math.random()*60;
+          G.bullets.push({x:e.x,y:e.y+15,vy:5,e:true});
+          sELaser();
+        }
       }
     }
 
-    if(e.y>H+30){ G.enemies.splice(i,1); continue; }
+    if(e.y>H+30){ 
+      if(e.type===2) { G.bossActive=false; G.nextBoss += 500; } // Boss escaped? reset
+      G.enemies.splice(i,1); continue; 
+    }
     
-    // Crash into player
-    if(G.iframes<=0 && ab(e.x-20,e.y-20,40,40, G.x-20,G.y-20,40,40)){
-      playerHit(); e.hp=0; aP(e.x,e.y,20,'#FF3D00',6); G.enemies.splice(i,1);
+    // Crash into player (Smaller Hitbox)
+    const ew = e.type===2?70:18;
+    if(G.iframes<=0 && ab(e.x-ew,e.y-10,ew*2,20, G.x-8,G.y-8,16,16)){
+      playerHit(); 
+      if(e.type!==2) { e.hp=0; aP(e.x,e.y,20,'#FF3D00',6); G.enemies.splice(i,1); }
     }
   }
 
-  // Update Drops
+  // Update Drops (Fruit Magnet & Slow Fall)
   for(let i=G.drops.length-1;i>=0;i--){
-    const d = G.drops[i]; d.y += d.vy;
+    const d = G.drops[i]; 
+    d.y += d.vy;
+    // Slow fall
+    if(d.vy > 1.2) d.vy *= 0.98;
+    // Magnetism
+    const dist = Math.sqrt((G.x-d.x)**2 + (G.y-d.y)**2);
+    if(dist < 180){
+      d.x += (G.x - d.x) * 0.04;
+      d.y += (G.y - d.y) * 0.04;
+    }
     if(d.y>H+20) { G.drops.splice(i,1); continue; }
-    if(ab(d.x-14,d.y-14,28,28, G.x-25,G.y-25,50,50)){
+    if(ab(d.x-14,d.y-14,28,28, G.x-20,G.y-20,40,40)){
       if(d.type===3){
         if(G.lives<3){G.lives++;G.htf=40;aP(d.x,d.y,12,'#E53935',5);tn(600,900,.12,.18)}
       } else {
         if(d.type===0){G.egg++;G.score+=20}else if(d.type===1){G.tom++;G.score+=25}else{G.pep++;G.score+=30}
-        aP(d.x,d.y,10,d.type===0?'#BBDEFB':d.type===1?'#EF5350':'#66BB6A',4);sCol();
+        aP(d.x,d.y,10,d.type===0?'#FF5252':d.type===1?'#D32F2F':'#7C4DFF',4);sCol();
         if(!G.combo && G.egg>0 && G.tom>0 && G.pep>0){
           G.combo=true; G.cf=90; G.score+=500; aP(G.x,G.y,30,'#FFD54F',6); sK();
         }
@@ -383,22 +424,17 @@ function update(){
   if(G.htf>0)G.htf--;
   if(G.cf>0)G.cf--;
   
-  // Particles
-  for(let i=G.pts.length-1;i>=0;i--){
-    const p=G.pts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.life--;
-    if(p.life<=0)G.pts.splice(i,1);
-  }
+  // Smooth Shake Decay
+  if(G.shake>0.1) G.shake *= 0.9; else G.shake = 0;
 }
 
-function playerHit(){
-  G.lives--; G.iframes=120; G.shake=8;
-  aP(G.x,G.y,25,'#FFCA28',6);
-  tn(100,20,.4,.3); // Big hit sound
-  if(G.lives<=0){
-    G.phase=3; G.dieT=0; G.shake=12;
-    if(G.score>G.hi){G.hi=G.score;sHi()}
-    document.getElementById('btn1').style.display='block';
-  }
+function spawnBoss(){
+  G.bossActive = true;
+  G.bossHP = G.bossMaxHP;
+  G.enemies.push({
+    x:W/2, y:-60, type:2, hp:G.bossMaxHP, vx:2, vy:0.5, shootTimer:60
+  });
+  tn(100, 400, 1, 0.2, 'sawtooth');
 }
 
 function dHUD(){
@@ -409,6 +445,15 @@ function dHUD(){
   X.fillStyle=G.egg>0?'#FF5252':'rgba(255,255,255,.2)';X.fillText('🍓'+G.egg,ix,iy);
   X.fillStyle=G.tom>0?'#D32F2F':'rgba(255,255,255,.2)';X.fillText('🍒'+G.tom,ix+70,iy);
   X.fillStyle=G.pep>0?'#7C4DFF':'rgba(255,255,255,.2)';X.fillText('🫐'+G.pep,ix+140,iy)
+  
+  // Boss Health Bar
+  if(G.bossActive){
+    const bw=300, bh=12, bx=(W-bw)/2, by=50;
+    X.fillStyle='rgba(255,255,255,0.2)';X.fillRect(bx,by,bw,bh);
+    X.fillStyle='#76FF03';X.fillRect(bx,by,(G.bossHP/G.bossMaxHP)*bw,bh);
+    X.strokeStyle='#fff';X.lineWidth=2;X.strokeRect(bx,by,bw,bh);
+    X.font='8px "Press Start 2P"';X.textAlign='center';X.fillStyle='#fff';X.fillText('SPACE MAFIA BOSS',W/2,by+25);
+  }
 }
 
 function dSplash(){
