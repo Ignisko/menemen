@@ -18,9 +18,10 @@ body::before {
 }
 
 #ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100}
-#btn1, #btnStart{pointer-events:auto;display:none;margin-top:20px;padding:12px 24px;background:#E040FB;color:#000;text-decoration:none;font-weight:bold;border:4px solid #fff;cursor:pointer;font-family:inherit;font-size:14px;transition:transform 0.1s;box-shadow:6px 6px 0 rgba(0,0,0,0.4)}
-#btnStart{display:block;margin-top:0}
-#btnStart:hover, #btn1:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 rgba(0,0,0,0.5)}
+#btn1, #btnStart, #btnStory{pointer-events:auto;display:none;margin-top:20px;padding:14px 28px;background:#E040FB;color:#000;text-decoration:none;font-weight:bold;border:4px solid #fff;cursor:pointer;font-family:inherit;font-size:16px;transition:0.1s;box-shadow:6px 6px 0 rgba(0,0,0,0.4)}
+#btnStart{background:#76FF03;color:#000;border-color:#fff}
+#btnStory{display:block;margin-top:0}
+#btnStory:hover, #btnStart:hover, #btn1:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 rgba(0,0,0,0.5)}
 #btn1{margin-top:140px;background:rgba(156,39,176,0.8);color:#fff;border-color:rgba(255,255,255,0.5)}
 
 /* Star Wars Crawl Styles */
@@ -68,7 +69,8 @@ body::before {
 </head>
 <body>
 <div id="ui">
-   <button id="btnStart" onclick="startStory()">START GAME</button>
+   <button id="btnStory" onclick="initiateStory()">INITIATE MISSION</button>
+   <button id="btnStart" onclick="startLevel()">DEPLOY PILOTS</button>
    <a id="btn1" href="index.html">RETURN TO HUB</a>
  </div>
  <div id="introContainer">
@@ -97,13 +99,30 @@ const sExp=()=>tn(150,50,.3,.15,'sawtooth');
 const sCol=()=>tn(400,800,.1,.15,'square');
 const sK=()=>{tn(300,500,.2,.1,'sawtooth');tn(400,800,.15,.1,'triangle')};
 
-let G;
-function lHi(){try{return parseInt(localStorage.getItem('menemen3Hi'))||0}catch(e){return 0}}
-function sHi(){try{localStorage.setItem('menemen3Hi',G.hi)}catch(e){}}
+function playIntroMusic(){
+  if(!AC) return;
+  const notes = [
+    {f:261.63, d:0.6}, {f:392.00, d:0.6}, 
+    {f:349.23, d:0.15}, {f:329.63, d:0.15}, {f:293.66, d:0.15}, 
+    {f:523.25, d:0.6}, {f:392.00, d:0.6},
+    {f:349.23, d:0.15}, {f:329.63, d:0.15}, {f:293.66, d:0.15},
+    {f:523.25, d:0.6}, {f:392.00, d:0.6}
+  ];
+  let time = AC.currentTime;
+  notes.forEach(n => {
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'square'; o.frequency.value = n.f;
+    g.gain.setValueAtTime(0.05, time);
+    g.gain.linearRampToValueAtTime(0, time + n.d);
+    o.connect(g); g.connect(AC.destination);
+    o.start(time); o.stop(time + n.d);
+    time += n.d;
+  });
+}
 
 function reset(){
   G={
-   phase:-1, is:0, it:0,
+   phase:-2, is:0, it:0,
    x:W/2, y:H-80, vx:0, 
    score:0, hi:lHi(),
    bullets:[], enemies:[], pts:[], stars:[], drops:[],
@@ -141,7 +160,7 @@ function drawSpace(){
   for(const s of G.stars){
     X.globalAlpha=s.s;
     X.fillRect(s.x,s.y,s.s>0.5?2:1,s.s>0.5?2:1);
-    s.y+=s.v * (G.phase===0 ? 0.3 : 1);
+    s.y+=s.v * (G.phase<=0 ? 0.3 : 1);
     if(s.y>H) {s.y=-10;s.x=Math.random()*W;}
   }
   X.globalAlpha=1;
@@ -239,13 +258,13 @@ function drawDrop(d){
 }
 
 function update(){
-  if(G.phase===-1) return;
-  if(G.phase===0){
+  if(G.phase===-2) return;
+  if(G.phase===-1){
    G.it++;
-   if(G.it>300&&G.is===0) {G.is++;G.it=0}
-   if(G.is>0&&G.it>250) {G.phase=1;G.it=0}
+   if(G.it>2400) { showInstructions(); } // Approx end of crawl
    return;
   }
+  if(G.phase===0) return;
   if(G.phase===3){ G.dieT++; if(G.shake>0)G.shake*=.8; return; }
   
   // Difficulty scaling
@@ -392,21 +411,27 @@ function dHUD(){
   X.fillStyle=G.pep>0?'#7C4DFF':'rgba(255,255,255,.2)';X.fillText('🫐'+G.pep,ix+140,iy)
 }
 
+function dSplash(){
+  X.fillStyle='rgba(0,0,0,0.6)';X.fillRect(0,0,W,H);
+  X.textAlign='center';
+  X.font='bold 28px monospace';X.fillStyle='#E040FB';X.fillText('GALACTIC HARVEST',W/2+2,H/2-78);X.fillStyle='#fff';X.fillText('GALACTIC HARVEST',W/2,H/2-80);
+  X.font='italic 12px monospace';X.fillStyle='#FFCA28';X.fillText('By Iggy & Ibo',W/2,H/2-50);
+  X.font='10px monospace';X.fillStyle='rgba(255,255,255,0.5)';X.fillText('ARCADE TRIFECTA: PART III',W/2,H/2+40);
+}
+
 function dStory(){
-  // The story is now handled by the CSS crawl overlay.
-  // We just keep the space background drawing.
+  // Handled by CSS Intro Container
 }
 
 function dInstr(){
-  X.fillStyle='rgba(0,0,0,0.7)';X.fillRect(0,0,W,H);
+  X.fillStyle='rgba(0,0,0,0.85)';X.fillRect(0,0,W,H);
   X.textAlign='center';
-  X.font='bold 28px monospace';X.fillStyle='#E040FB';X.fillText('GALACTIC HARVEST',W/2,H/2-100);
-  X.font='16px monospace';X.fillStyle='#FFF';X.fillText('Steer Left & Right.',W/2,H/2-40);
-  X.fillText('Press SPACE/UP or TAP to shoot!',W/2,H/2-10);
-  X.fillText('Blast asteroids & aliens!',W/2,H/2+20);
-  X.font='13px monospace';X.fillStyle='#FFCA28';X.fillText('Harvest floating Galactic Fruits:',W/2,H/2+60);
-  X.fillText('🍓 Strawberry  🍒 Cherry  🫐 Glow-Berry',W/2,H/2+80);
-  if(Math.sin(Date.now()*.005)>.2){X.font='bold 16px monospace';X.fillStyle='#76FF03';X.fillText('> PRESS SPACE TO DEPLOY <',W/2,H/2+140)}
+  X.font='bold 20px monospace';X.fillStyle='#76FF03';X.fillText('STATUS: READY',W/2,H/2-100);
+  X.font='14px monospace';X.fillStyle='#FFF';X.fillText('Steer: LEFT & RIGHT',W/2,H/2-40);
+  X.fillText('Fire: SPACE / UP / TAP',W/2,H/2-15);
+  X.font='12px monospace';X.fillStyle='#FFCA28';X.fillText('MISSION GOAL:',W/2,H/2+40);
+  X.fillText('Harvest fruits of the spicy nebula.',W/2,H/2+65);
+  X.font='11px monospace';X.fillText('🍓   🍒   🫐',W/2,H/2+95);
 }
 
 function frame(){
@@ -416,8 +441,9 @@ function frame(){
   
   drawSpace();
   
-  if(G.phase===0) dStory();
-  else if(G.phase===-1) dInstr();
+  if(G.phase===-2) dSplash();
+  else if(G.phase===-1) dStory();
+  else if(G.phase===0) dInstr();
   else {
     for(const e of G.enemies) drawEnemy(e);
     for(const d of G.drops) drawDrop(d);
@@ -466,9 +492,10 @@ function frame(){
 
 function handleK(e,v){
   if(['Space','ArrowUp','KeyW'].includes(e.code)) { 
-    if(v && G.phase===-1) { iA(); startStory(); }
+    if(v && G.phase===-2) { initiateStory(); }
+    else if(v && G.phase===-1) { showInstructions(); }
     else if(v && G.phase===0) { startLevel(); }
-    else if(v && G.phase===3 && G.dieT>30) { reset(); document.getElementById('btn1').style.display='none'; startStory(); }
+    else if(v && G.phase===3 && G.dieT>30) { reset(); document.getElementById('btn1').style.display='none'; initiateStory(); }
     else G.keys.shoot=v; 
     e.preventDefault(); 
   }
@@ -479,9 +506,10 @@ document.addEventListener('keydown',e=>handleK(e,1));
 document.addEventListener('keyup',e=>handleK(e,0));
 C.addEventListener('touchstart',e=>{
   e.preventDefault(); iA();
-  if(G.phase===-1) { document.getElementById('btnStart').style.display='none'; startStory(); }
+  if(G.phase===-2) { initiateStory(); }
+  else if(G.phase===-1) { showInstructions(); }
   else if(G.phase===0) { startLevel(); }
-  else if(G.phase===3 && G.dieT>30) { reset(); document.getElementById('btn1').style.display='none'; startStory(); }
+  else if(G.phase===3 && G.dieT>30) { reset(); document.getElementById('btn1').style.display='none'; initiateStory(); }
   else {
     G.keys.shoot=1; // auto shoot on touch
     if(e.touches[0].clientX < window.innerWidth/2) G.keys.l=1;
@@ -490,20 +518,27 @@ C.addEventListener('touchstart',e=>{
 },{passive:false});
 C.addEventListener('touchend',e=>{G.keys.l=0;G.keys.r=0;G.keys.shoot=0;});
 
-function startStory(){
+function initiateStory(){
   iA();
-  G.phase=0;
-  document.getElementById('btnStart').style.display='none';
+  G.phase=-1;
+  document.getElementById('btnStory').style.display='none';
   document.getElementById('introContainer').style.display = 'flex';
-  // Fade out intro after 45s or skip by clicking
+  playIntroMusic();
+  // Auto-progress after crawl if not skipped
   setTimeout(() => {
-    if(G.phase === 0) startLevel();
+    if(G.phase === -1) showInstructions();
   }, 45000);
 }
 
-function startLevel() {
+function showInstructions() {
+    G.phase = 0;
     document.getElementById('introContainer').style.display = 'none';
+    document.getElementById('btnStart').style.display = 'block';
+}
+
+function startLevel() {
     G.phase = 1;
+    document.getElementById('btnStart').style.display = 'none';
 }
 
 reset();frame();
