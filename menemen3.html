@@ -37,21 +37,21 @@ body::before {
 
 #crawlContent {
     position: relative;
-    top: 100%;
+    top: 110%;
     width: 80%;
     margin: 0 auto;
     text-align: center;
     color: #feda4a;
-    font-size: 140%;
+    font-size: 1.5rem;
     font-weight: bold;
-    line-height: 1.5;
-    transform: rotateX(25deg);
-    animation: crawl 45s linear;
+    line-height: 1.6;
+    transform: rotateX(20deg);
+    animation: crawl 40s linear forwards;
 }
 
 @keyframes crawl {
-    0% { top: 100%; }
-    100% { top: -250%; }
+    0% { top: 110%; }
+    100% { top: -300%; }
 }
 
 #crawlContent h2 {
@@ -74,11 +74,11 @@ body::before {
  <div id="introContainer">
     <div id="crawlContent">
         <p>A long time ago in a kitchen far, far away...</p>
-        <h2>EPISODE III:<br>THE MENEMEN CONQUEST</h2>
+        <h2>EPISODE III:<br>THE GALACTIC FRUIT QUEST</h2>
         <p>It is a period of culinary unrest. IGGY and IBO, the galaxy's bravest chefs, have launched into deep space to escape the hunger that plagues the outer rim.</p>
-        <p>Their mission: to conquer the legendary Menemen sectors and harvest the ingredients for the Ultimate Feast.</p>
-        <p>But their journey is fueled by more than just hunger. They search for a MYSTERIOUS GIRL, the keeper of the Secret Sizzle, who vanished into the Spicy Nebula.</p>
-        <p>Only by harvesting the stars can they find her and fulfill their destiny...</p>
+        <p>Their mission: to collect the legendary GALACTIC FRUIT and secure the ingredients for the Ultimate Star-Feast.</p>
+        <p>But their journey is fueled by more than just hunger. They search for a MYSTERIOUS GIRL, the keeper of the Sacred Sizzle, who vanished into the Spicy Nebula.</p>
+        <p>Only by harvesting the fruits of the stars can they find her and fulfill their destiny...</p>
     </div>
  </div>
 <canvas id="c"></canvas>
@@ -225,15 +225,16 @@ function drawDrop(d){
     X.fillStyle='#E53935';X.beginPath();X.moveTo(x,y+6);X.bezierCurveTo(x-10,y-2,x-10,y-10,x,y-5);X.bezierCurveTo(x+10,y-10,x+10,y-2,x,y+6);X.fill();
     return;
   }
-  X.fillStyle=type===0?'rgba(200,230,250,.2)':type===1?'rgba(250,80,60,.2)':'rgba(80,200,80,.2)';X.beginPath();X.arc(x,y,14,0,Math.PI*2);X.fill();
-  if(type===0){ // Space Egg
-    X.fillStyle='#E3F2FD';X.beginPath();X.ellipse(x,y,7,9,0,0,Math.PI*2);X.fill();
-    X.fillStyle='#FFF59D';X.beginPath();X.arc(x-1,y+1,3,0,Math.PI*2);X.fill();
-  } else if(type===1){ // Cosmic Tomato
-    X.fillStyle='#D32F2F';X.beginPath();X.arc(x,y,8,0,Math.PI*2);X.fill();
-    X.fillStyle='#2E7D32';X.fillRect(x-2,y-12,4,4);
-  } else { // Astro Pepper
-    X.fillStyle='#2E7D32';X.beginPath();X.moveTo(x,y-10);X.bezierCurveTo(x+10,y+10,x-10,y+10,x,y-10);X.fill();
+  X.fillStyle=type===0?'rgba(255,100,150,.2)':type===1?'rgba(255,50,50,.2)':'rgba(150,50,255,.2)';X.beginPath();X.arc(x,y,14,0,Math.PI*2);X.fill();
+  if(type===0){ // Stellar Strawberry
+    X.fillStyle='#FF5252';X.beginPath();X.moveTo(x,y-8);X.quadraticCurveTo(x+10,y,x,y+10);X.quadraticCurveTo(x-10,y,x,y-8);X.fill();
+    X.fillStyle='#76FF03';X.fillRect(x-1,y-10,2,3);
+  } else if(type===1){ // Cosmic Cherry
+    X.fillStyle='#D32F2F';X.beginPath();X.arc(x-4,y,6,0,Math.PI*2);X.arc(x+4,y,6,0,Math.PI*2);X.fill();
+    X.strokeStyle='#4CAF50';X.beginPath();X.moveTo(x-2,y-4);X.lineTo(x,y-10);X.lineTo(x+2,y-4);X.stroke();
+  } else { // Galactic Glow-Berry
+    X.fillStyle='#7C4DFF';X.beginPath();X.arc(x,y,7,0,Math.PI*2);X.fill();
+    X.fillStyle='#E040FB';X.beginPath();X.arc(x-2,y-2,2,0,Math.PI*2);X.fill();
   }
 }
 
@@ -386,9 +387,9 @@ function dHUD(){
   X.textAlign='right';X.fillStyle='rgba(255,255,255,.3)';X.fillText('HI',W-12,22);X.fillStyle='#E040FB';X.fillText(Math.floor(G.hi),W-12,40);
   for(let i=0;i<3;i++){X.fillStyle=i<G.lives?'#FF1744':'rgba(255,255,255,.1)';const hx=W/2-30+i*30,hy=14;X.beginPath();X.moveTo(hx,hy+5);X.bezierCurveTo(hx-10,hy-5,hx-10,hy-15,hx,hy-8);X.bezierCurveTo(hx+10,hy-15,hx+10,hy-5,hx,hy+5);X.fill()}
   X.textAlign='left';const ix=12,iy=62;
-  X.fillStyle=G.egg>0?'#FFFF00':'rgba(255,255,255,.2)';X.fillText('🥚'+G.egg,ix,iy);
-  X.fillStyle=G.tom>0?'#FF3D00':'rgba(255,255,255,.2)';X.fillText('🍅'+G.tom,ix+70,iy);
-  X.fillStyle=G.pep>0?'#00E676':'rgba(255,255,255,.2)';X.fillText('🌶'+G.pep,ix+140,iy)
+  X.fillStyle=G.egg>0?'#FF5252':'rgba(255,255,255,.2)';X.fillText('🍓'+G.egg,ix,iy);
+  X.fillStyle=G.tom>0?'#D32F2F':'rgba(255,255,255,.2)';X.fillText('🍒'+G.tom,ix+70,iy);
+  X.fillStyle=G.pep>0?'#7C4DFF':'rgba(255,255,255,.2)';X.fillText('🫐'+G.pep,ix+140,iy)
 }
 
 function dStory(){
@@ -403,8 +404,8 @@ function dInstr(){
   X.font='16px monospace';X.fillStyle='#FFF';X.fillText('Steer Left & Right.',W/2,H/2-40);
   X.fillText('Press SPACE/UP or TAP to shoot!',W/2,H/2-10);
   X.fillText('Blast asteroids & aliens!',W/2,H/2+20);
-  X.font='13px monospace';X.fillStyle='#FFCA28';X.fillText('Harvest floating ingredients:',W/2,H/2+60);
-  X.fillText('🥚 Space Egg  🍅 Cosmic Tomato  🌶️ Astro Pepper',W/2,H/2+80);
+  X.font='13px monospace';X.fillStyle='#FFCA28';X.fillText('Harvest floating Galactic Fruits:',W/2,H/2+60);
+  X.fillText('🍓 Strawberry  🍒 Cherry  🫐 Glow-Berry',W/2,H/2+80);
   if(Math.sin(Date.now()*.005)>.2){X.font='bold 16px monospace';X.fillStyle='#76FF03';X.fillText('> PRESS SPACE TO DEPLOY <',W/2,H/2+140)}
 }
 
