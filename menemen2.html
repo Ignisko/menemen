@@ -17,15 +17,15 @@ canvas{max-width:100%;height:auto;max-height:100vh;image-rendering:pixelated;bor
 </head>
 <body>
 <div id="ui">
-  <button id="btnStart" onclick="startStory()">START GAME</button>
-  <a id="btn1" href="index.html">Play Menemen 1</a>
-</div>
+   <button id="btnStart" onclick="startStory()">START GAME</button>
+   <a id="btn1" href="menemen1.html">Play Village Run</a>
+ </div>
 <canvas id="c"></canvas>
 <script>
 const C=document.getElementById('c'),X=C.getContext('2d');
 const W=500,H=700;
 C.width=W;C.height=H;
-const GRV=.6,JMP=-12,SPD=2,PW=28,PH=50;
+const GRV=.35,JMP=-10,SPD=1.2,PW=28,PH=50;
 
 let AC=null;
 function iA(){if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
@@ -172,7 +172,7 @@ function dOcean(){
       }
     }
   } else { // Deep Ocean Phase
-    const f = Math.min(1, (s-300)/2000);
+    const f = Math.min(1, (s-300)/8000); // Slowed down from 2000 to 8000
     // Interpolate Surface Blue to Deep Black
     const r = 0 + (1 - 0)*f, g = 119 + (5 - 119)*f, b = 190 + (10 - 190)*f;
     c1 = `rgb(${0},${119-119*f},${190-190*f})`; // Simplified fade to dark
@@ -199,9 +199,28 @@ function dOcean(){
 }
 
 function dPlat(p){
- X.fillStyle='#2A4B7C';X.fillRect(0,p.y,p.gx,15);X.fillRect(p.gx+p.gw,p.y,W-(p.gx+p.gw),15);
- X.fillStyle='#1c3152';X.fillRect(0,p.y+4,p.gx,11);X.fillRect(p.gx+p.gw,p.y+4,W-(p.gx+p.gw),11);
- X.fillStyle='#4A7B8C';X.fillRect(0,p.y,p.gx,2);X.fillRect(p.gx+p.gw,p.y,W-(p.gx+p.gw),2);
+  // NO WOODEN POLES! Floating Fish Platforms
+  const drawFish = (fx, fy, fw, dir) => {
+    X.save(); X.translate(fx + fw/2, fy); if(dir < 0) X.scale(-1, 1);
+    X.fillStyle = '#2A4B7C'; // Fish Body
+    X.beginPath(); X.ellipse(0, 0, fw/2, 12, 0, 0, Math.PI*2); X.fill();
+    X.fillStyle = '#4A7B8C'; // Highlights
+    X.beginPath(); X.ellipse(-fw*0.1, -4, fw/4, 4, 0, 0, Math.PI*2); X.fill();
+    // Tail
+    X.fillStyle = '#1c3152'; X.beginPath(); X.moveTo(-fw/2, 0); X.lineTo(-fw/2-15, -10); X.lineTo(-fw/2-10, 0); X.lineTo(-fw/2-15, 10); X.closePath(); X.fill();
+    // Eye
+    X.fillStyle = '#fff'; X.beginPath(); X.arc(fw*0.3, -3, 3, 0, Math.PI*2); X.fill();
+    X.fillStyle = '#000'; X.beginPath(); X.arc(fw*0.35, -3, 1.5, 0, Math.PI*2); X.fill();
+    X.restore();
+  };
+
+  // The character lands on THESE fish
+  // Left side group
+  drawFish(p.gx/2-30, p.y+4, p.gx+60, 1);
+  // Right side group
+  const rX = p.gx+p.gw;
+  const rW = W - rX;
+  drawFish(rX + rW/2 - 30, p.y+4, rW+60, -1);
 
  // hazards (Urchins)
  for(const h of p.hz){
@@ -413,7 +432,7 @@ function frame(){
    
    if(G.dieT > 60){
      X.font='italic 18px Georgia,serif';X.fillStyle='#FFCA28';
-     X.fillText('Ibo, where is the meneme?', W/2, H/2+20);
+     X.fillText('Ibo, where is the menemen?', W/2, H/2+20);
    }
 
    if(Math.sin(Date.now()*.005)>.2){X.font='bold 13px monospace';X.fillStyle='#fff';X.fillText('Press SPACE to Restart',W/2,H/2+80)}
