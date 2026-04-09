@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Menemen 3: Galactic Harvest</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;user-select:none;font-family:'Press Start 2P', cursive}
+canvas{max-width:100%;height:auto;max-height:100vh;image-rendering:pixelated;border:4px solid #333;box-shadow:0 0 40px rgba(220,0,255,.3)}
+
+/* CRT Overlay */
+body::before {
+    content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
+    z-index: 100; background-size: 100% 4px, 6px 100%; pointer-events: none;
+}
+
+#ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100}
+#btn1, #btnStart{pointer-events:auto;display:none;margin-top:20px;padding:12px 24px;background:#E040FB;color:#000;text-decoration:none;font-weight:bold;border:4px solid #fff;cursor:pointer;font-family:inherit;font-size:14px;transition:transform 0.1s;box-shadow:6px 6px 0 rgba(0,0,0,0.4)}
+#btnStart{display:block;margin-top:0}
+#btnStart:hover, #btn1:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 rgba(0,0,0,0.5)}
+#btn1{margin-top:140px;background:rgba(156,39,176,0.8);color:#fff;border-color:rgba(255,255,255,0.5)}
+</style>
+</head>
+<body>
+<div id="ui">
+   <button id="btnStart" onclick="startStory()">START GAME</button>
+   <a id="btn1" href="index.html">RETURN TO HUB</a>
+ </div>
+<canvas id="c"></canvas>
+<script>
+const C=document.getElementById('c'),X=C.getContext('2d');
+const W=500,H=700;
+C.width=W;C.height=H;
+
+let AC=null;
+function iA(){if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+function tn(f1,f2,d,v,t='sine'){if(!AC)return;try{const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);o.type=t;o.frequency.setValueAtTime(f1,AC.currentTime);o.frequency.linearRampToValueAtTime(f2,AC.currentTime+d);g.gain.setValueAtTime(v||.12,AC.currentTime);g.gain.linearRampToValueAtTime(0,AC.currentTime+d);o.start();o.stop(AC.currentTime+d)}catch(e){}}
+
+const sLaser=()=>tn(800,400,.1,.05,'square');
+const sELaser=()=>tn(400,200,.15,.04,'sawtooth');
+const sExp=()=>tn(150,50,.3,.15,'sawtooth');
+const sCol=()=>tn(400,800,.1,.15,'square');
+const sK=()=>{tn(300,500,.2,.1,'sawtooth');tn(400,800,.15,.1,'triangle')};
+
+let G;
+function lHi(){try{return parseInt(localStorage.getItem('menemen3Hi'))||0}catch(e){return 0}}
+function sHi(){try{localStorage.setItem('menemen3Hi',G.hi)}catch(e){}}
+
+function reset(){
+  G={
+   phase:-1, is:0, it:0,
+   x:W/2, y:H-80, vx:0, 
+   score:0, hi:lHi(),
+   bullets:[], enemies:[], pts:[], stars:[], drops:[],
+   egg:0, tom:0, pep:0, combo:false, cf:0,
+   lives:3, iframes:0, htf:0,
+   shake:0, overT:0, keys:{l:0,r:0,shoot:0},
+   shootDelay:0, spawnTimer:60, diff:1
+  };
+  for(let i=0;i<80;i++) G.stars.push({x:Math.random()*W,y:Math.random()*H,s:Math.random(),v:Math.random()*2+0.5});
+}
+
+function ab(ax,ay,aw,ah,bx,by,bw,bh){return ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by}
+function aP(x,y,n,c,s){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,v=1+Math.random()*(s||3);G.pts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:20+Math.random()*20,max:40,c,sz:2+Math.random()*3})}}
+
+let beatIdx=0, nextBeat=0;
+function playMusic(){
+  if(!AC || G.phase !== 1) return;
+  if(AC.currentTime > nextBeat){
+    const freq = [65, 65, 98, 65, 130, 65, 98, 87][beatIdx % 8];
+    const mod = beatIdx % 4 === 0 ? 1 : 0.6;
+    const o = AC.createOscillator(), g = AC.createGain(), m = AC.createOscillator(), mg = AC.createGain();
+    o.type = 'sawtooth'; m.type = 'sine'; m.frequency.value = freq * 0.5; mg.gain.value = 500;
+    m.connect(mg); mg.connect(o.frequency); o.connect(g); g.connect(AC.destination);
+    o.frequency.setValueAtTime(freq, AC.currentTime);
+    g.gain.setValueAtTime(0.04 * mod, AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + 0.2);
+    o.start(); m.start(); o.stop(AC.currentTime + 0.2); m.stop(AC.currentTime + 0.2);
+    nextBeat = AC.currentTime + 0.22; beatIdx++;
+  }
+}
+
+function drawSpace(){
+  X.fillStyle='#05001A';X.fillRect(0,0,W,H);
+  X.fillStyle='#FFF';
+  for(const s of G.stars){
+    X.globalAlpha=s.s;
+    X.fillRect(s.x,s.y,s.s>0.5?2:1,s.s>0.5?2:1);
+    s.y+=s.v * (G.phase===0 ? 0.3 : 1);
+    if(s.y>H) {s.y=-10;s.x=Math.random()*W;}
+  }
+  X.globalAlpha=1;
+}
+
+function drawShip(x,y){
+  X.save(); X.translate(x,y);
+  
+  // Exhaust flame
+  if(Math.random()<0.5){
+    X.fillStyle='#FF3D00';
+    X.beginPath();X.moveTo(-8,15);X.lineTo(0,40);X.lineTo(8,15);X.fill();
+    X.fillStyle='#FFEA00';
+    X.beginPath();X.moveTo(-4,15);X.lineTo(0,28);X.lineTo(4,15);X.fill();
+  }
+  
+  // Wok Body
+  X.fillStyle='#37474F'; // Dark metal
+  X.beginPath();X.arc(0,0,24,0,Math.PI*2);X.fill();
+  X.fillStyle='#546E7A'; // Lighter inside
+  X.beginPath();X.arc(0,-3,20,0,Math.PI*2);X.fill();
+  
+  // Pan Handle
+  X.fillStyle='#795548';
+  X.fillRect(-6,23,12,18);
+  X.fillStyle='#4E342E';
+  X.fillRect(-6,38,12,3);
+  
+  // Cockpit
+  X.fillStyle='rgba(0, 229, 255, 0.4)';
+  X.beginPath();X.arc(0,0,14,0,Math.PI*2);X.fill();
+  
+  // Ibo (left)
+  X.fillStyle='#FFE0BD';X.fillRect(-9,-2,6,6);
+  X.fillStyle='#1A1A1A';X.fillRect(-9,-5,6,3); 
+  // Iggy (right)
+  X.fillStyle='#FFCBA4';X.fillRect(3,-2,6,6);
+  X.fillStyle='#654321';X.fillRect(1,-5,10,3);
+  
+  // Laser Cannons 
+  X.fillStyle='#B0BEC5';
+  X.fillRect(-28,-8,6,18);
+  X.fillRect(22,-8,6,18);
+  X.fillStyle='#00E5FF';
+  X.fillRect(-27,-10,4,4);
+  X.fillRect(23,-10,4,4);
+
+  X.restore();
+}
+
+function drawEnemy(e){
+  X.save(); X.translate(e.x,e.y);
+  if(e.type===0){ // Asteroid
+    X.fillStyle='#5D4037';
+    X.beginPath();
+    for(let i=0;i<8;i++){
+      const a = i*Math.PI/4;
+      const r = 20 + Math.sin(a*3+e.rot)*5;
+      X.lineTo(Math.cos(a)*r, Math.sin(a)*r);
+    }
+    X.fill();
+    X.fillStyle='#3E2723';
+    X.beginPath();X.arc(-5,-5,4,0,Math.PI*2);X.fill();
+    X.beginPath();X.arc(8,6,6,0,Math.PI*2);X.fill();
+  } else { // Alien Shooter ship
+    X.fillStyle='#9C27B0';
+    X.beginPath();X.moveTo(-22,-10);X.lineTo(22,-10);X.lineTo(0,18);X.fill();
+    X.fillStyle='#E040FB';
+    X.beginPath();X.moveTo(-15,-10);X.lineTo(15,-10);X.lineTo(0,12);X.fill();
+    X.fillStyle='#76FF03';
+    X.beginPath();X.arc(0,-4,8,0,Math.PI*2);X.fill();
+    X.fillStyle='#311B92';
+    X.fillRect(-18,-15,6,10); X.fillRect(12,-15,6,10);
+  }
+  X.restore();
+}
+
+function drawDrop(d){
+  const x=d.x, y=d.y, type=d.type;
+  if(type===3){ // Heart
+    X.fillStyle='#E53935';X.beginPath();X.moveTo(x,y+6);X.bezierCurveTo(x-10,y-2,x-10,y-10,x,y-5);X.bezierCurveTo(x+10,y-10,x+10,y-2,x,y+6);X.fill();
+    return;
+  }
+  X.fillStyle=type===0?'rgba(200,230,250,.2)':type===1?'rgba(250,80,60,.2)':'rgba(80,200,80,.2)';X.beginPath();X.arc(x,y,14,0,Math.PI*2);X.fill();
+  if(type===0){ // Space Egg
+    X.fillStyle='#E3F2FD';X.beginPath();X.ellipse(x,y,7,9,0,0,Math.PI*2);X.fill();
+    X.fillStyle='#FFF59D';X.beginPath();X.arc(x-1,y+1,3,0,Math.PI*2);X.fill();
+  } else if(type===1){ // Cosmic Tomato
+    X.fillStyle='#D32F2F';X.beginPath();X.arc(x,y,8,0,Math.PI*2);X.fill();
+    X.fillStyle='#2E7D32';X.fillRect(x-2,y-12,4,4);
+  } else { // Astro Pepper
+    X.fillStyle='#2E7D32';X.beginPath();X.moveTo(x,y-10);X.bezierCurveTo(x+10,y+10,x-10,y+10,x,y-10);X.fill();
+  }
+}
+
+function update(){
+  if(G.phase===-1) return;
+  if(G.phase===0){
+   G.it++;
+   if(G.it>300&&G.is===0) {G.is++;G.it=0}
+   if(G.is>0&&G.it>250) {G.phase=1;G.it=0}
+   return;
+  }
+  if(G.phase===3){ G.dieT++; if(G.shake>0)G.shake*=.8; return; }
+  
+  // Difficulty scaling
+  G.diff += 0.0003;
+  
+  // Ship Movement
+  if(G.keys.l) G.vx-=1.2; if(G.keys.r) G.vx+=1.2;
+  G.vx *= 0.82; G.x += G.vx;
+  if(G.x<30) G.x=30; if(G.x>W-30) G.x=W-30;
+  
+  // Shooting
+  if(G.keys.shoot && G.shootDelay<=0 && G.iframes<=100){
+    G.shootDelay = 14;
+    G.bullets.push({x:G.x-25,y:G.y-10,vy:-14, e:false});
+    G.bullets.push({x:G.x+25,y:G.y-10,vy:-14, e:false});
+    sLaser();
+  }
+  if(G.shootDelay>0) G.shootDelay--;
+  
+  // Entity Spawning
+  G.spawnTimer--;
+  if(G.spawnTimer<=0){
+    G.spawnTimer = 60/G.diff + Math.random()*30;
+    const isAlien = Math.random() < 0.45; // 45% alien, 55% asteroid
+    G.enemies.push({
+      x: 30+Math.random()*(W-60), y:-30, 
+      type: isAlien?1:0, 
+      hp: isAlien?2:3,
+      vy: (isAlien?1.5:2.5) * (0.8+Math.random()*0.4) * Math.min(G.diff, 2.5),
+      rot: Math.random()*20,
+      shootTimer: 60+Math.random()*60
+    });
+  }
+
+  // Update Bullets
+  for(let i=G.bullets.length-1;i>=0;i--){
+    const b = G.bullets[i];
+    b.y += b.vy;
+    if(b.y<-20 || b.y>H+20){ G.bullets.splice(i,1); continue; }
+    
+    // Player hits enemies
+    if(!b.e){
+      let hit = false;
+      for(let j=G.enemies.length-1;j>=0;j--){
+        const e = G.enemies[j];
+        if(ab(b.x-2,b.y-8,4,16, e.x-20,e.y-20,40,40)){
+          hit = true; e.hp--;
+          aP(b.x,b.y,4,'#00E5FF',2);
+          if(e.hp<=0){
+            G.score += e.type===1?30:15;
+            aP(e.x,e.y,20,e.type===1?'#E040FB':'#5D4037',5);
+            sExp();
+            // Drop Ingredient? 35% chance
+            if(Math.random()<0.35) G.drops.push({x:e.x,y:e.y,vy:2.5,type:Math.floor(Math.random()*3)});
+            // Heal? 3% chance if lives < 3
+            if(Math.random()<0.03 && G.lives<3) G.drops.push({x:e.x,y:e.y,vy:2.5,type:3});
+            
+            G.enemies.splice(j,1);
+          } else {
+            tn(300,400,.05,.05); // Hit sound
+          }
+          break;
+        }
+      }
+      if(hit) G.bullets.splice(i,1);
+    } else {
+      // Enemy hits player
+      if(G.iframes<=0 && ab(b.x-3,b.y-8,6,16, G.x-15,G.y-15,30,30)){
+        playerHit(); G.bullets.splice(i,1);
+      }
+    }
+  }
+
+  // Update Enemies
+  for(let i=G.enemies.length-1;i>=0;i--){
+    const e = G.enemies[i];
+    e.y += e.vy;
+    if(e.type===0) e.rot += 0.05; // Asteroid spin
+    
+    if(e.type===1){ // Alien shoots
+      e.shootTimer--;
+      if(e.shootTimer<=0){
+        e.shootTimer = 120/G.diff + Math.random()*60;
+        G.bullets.push({x:e.x,y:e.y+15,vy:6*Math.min(G.diff,2),e:true});
+        sELaser();
+      }
+    }
+
+    if(e.y>H+30){ G.enemies.splice(i,1); continue; }
+    
+    // Crash into player
+    if(G.iframes<=0 && ab(e.x-20,e.y-20,40,40, G.x-20,G.y-20,40,40)){
+      playerHit(); e.hp=0; aP(e.x,e.y,20,'#FF3D00',6); G.enemies.splice(i,1);
+    }
+  }
+
+  // Update Drops
+  for(let i=G.drops.length-1;i>=0;i--){
+    const d = G.drops[i]; d.y += d.vy;
+    if(d.y>H+20) { G.drops.splice(i,1); continue; }
+    if(ab(d.x-14,d.y-14,28,28, G.x-25,G.y-25,50,50)){
+      if(d.type===3){
+        if(G.lives<3){G.lives++;G.htf=40;aP(d.x,d.y,12,'#E53935',5);tn(600,900,.12,.18)}
+      } else {
+        if(d.type===0){G.egg++;G.score+=20}else if(d.type===1){G.tom++;G.score+=25}else{G.pep++;G.score+=30}
+        aP(d.x,d.y,10,d.type===0?'#BBDEFB':d.type===1?'#EF5350':'#66BB6A',4);sCol();
+        if(!G.combo && G.egg>0 && G.tom>0 && G.pep>0){
+          G.combo=true; G.cf=90; G.score+=500; aP(G.x,G.y,30,'#FFD54F',6); sK();
+        }
+      }
+      G.drops.splice(i,1);
+    }
+  }
+  
+  if(G.iframes>0)G.iframes--; 
+  if(G.htf>0)G.htf--;
+  if(G.cf>0)G.cf--;
+  
+  // Particles
+  for(let i=G.pts.length-1;i>=0;i--){
+    const p=G.pts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.05;p.life--;
+    if(p.life<=0)G.pts.splice(i,1);
+  }
+}
+
+function playerHit(){
+  G.lives--; G.iframes=120; G.shake=8;
+  aP(G.x,G.y,25,'#FFCA28',6);
+  tn(100,20,.4,.3); // Big hit sound
+  if(G.lives<=0){
+    G.phase=3; G.dieT=0; G.shake=12;
+    if(G.score>G.hi){G.hi=G.score;sHi()}
+    document.getElementById('btn1').style.display='block';
+  }
+}
+
+function dHUD(){
+  X.font='bold 10px "Press Start 2P"';X.textAlign='left';X.fillStyle='rgba(255,255,255,.3)';X.fillText('SCORE',12,22);X.fillStyle='#FFF';X.fillText(Math.floor(G.score),12,40);
+  X.textAlign='right';X.fillStyle='rgba(255,255,255,.3)';X.fillText('HI',W-12,22);X.fillStyle='#E040FB';X.fillText(Math.floor(G.hi),W-12,40);
+  for(let i=0;i<3;i++){X.fillStyle=i<G.lives?'#FF1744':'rgba(255,255,255,.1)';const hx=W/2-30+i*30,hy=14;X.beginPath();X.moveTo(hx,hy+5);X.bezierCurveTo(hx-10,hy-5,hx-10,hy-15,hx,hy-8);X.bezierCurveTo(hx+10,hy-15,hx+10,hy-5,hx,hy+5);X.fill()}
+  X.textAlign='left';const ix=12,iy=62;
+  X.fillStyle=G.egg>0?'#FFFF00':'rgba(255,255,255,.2)';X.fillText('🥚'+G.egg,ix,iy);
+  X.fillStyle=G.tom>0?'#FF3D00':'rgba(255,255,255,.2)';X.fillText('🍅'+G.tom,ix+70,iy);
+  X.fillStyle=G.pep>0?'#00E676':'rgba(255,255,255,.2)';X.fillText('🌶'+G.pep,ix+140,iy)
+}
+
+function dStory(){
+  const f=Math.min(1,G.it/20);X.globalAlpha=f;
+  X.textAlign='center';
+  X.font='italic 16px Georgia,serif';
+  X.fillStyle='#B39DDB';
+  if(G.is===0){
+    X.fillText('Into the unknown...',W/2,H/2-30);
+    X.fillText('The universe hungers.',W/2,H/2+10);
+  } else {
+    X.fillStyle='#FFCA28';
+    X.font='bold 22px monospace';
+    X.fillText('"GALACTIC MENEMEN!"',W/2,H/2-20);
+    X.font='12px monospace';
+    X.fillStyle='#FFF';
+    X.fillText('Harvest the stars.',W/2,H/2+20);
+  }
+  X.globalAlpha=1;
+}
+
+function dInstr(){
+  X.fillStyle='rgba(0,0,0,0.7)';X.fillRect(0,0,W,H);
+  X.textAlign='center';
+  X.font='bold 28px monospace';X.fillStyle='#E040FB';X.fillText('GALACTIC HARVEST',W/2,H/2-100);
+  X.font='16px monospace';X.fillStyle='#FFF';X.fillText('Steer Left & Right.',W/2,H/2-40);
+  X.fillText('Press SPACE/UP or TAP to shoot!',W/2,H/2-10);
+  X.fillText('Blast asteroids & aliens!',W/2,H/2+20);
+  X.font='13px monospace';X.fillStyle='#FFCA28';X.fillText('Harvest floating ingredients:',W/2,H/2+60);
+  X.fillText('🥚 Space Egg  🍅 Cosmic Tomato  🌶️ Astro Pepper',W/2,H/2+80);
+  if(Math.sin(Date.now()*.005)>.2){X.font='bold 16px monospace';X.fillStyle='#76FF03';X.fillText('> PRESS SPACE TO DEPLOY <',W/2,H/2+140)}
+}
+
+function frame(){
+  update();
+  const sh=G.shake>.3,sx=sh?(Math.random()-.5)*G.shake:0,sy=sh?(Math.random()-.5)*G.shake:0;
+  X.save();X.translate(sx,sy);
+  
+  drawSpace();
+  
+  if(G.phase===0) dStory();
+  else if(G.phase===-1) dInstr();
+  else {
+    for(const e of G.enemies) drawEnemy(e);
+    for(const d of G.drops) drawDrop(d);
+    
+    // Draw Bullets
+    for(const b of G.bullets){
+      X.fillStyle=b.e?'#76FF03':'#00E5FF';
+      X.fillRect(b.x-2,b.y-8,4,16);
+      X.fillStyle='#FFF';
+      X.fillRect(b.x-1,b.y-4,2,8);
+    }
+    
+    // Draw Particles
+    for(const p of G.pts){
+      X.globalAlpha=p.life/p.max;X.fillStyle=p.c;X.fillRect(p.x-p.sz/2,p.y-p.sz/2,p.sz,p.sz);
+    }
+    X.globalAlpha=1;
+
+    // Draw Ship
+    if(G.iframes<=0||Math.floor(G.iframes/6)%2===0) { drawShip(G.x,G.y); }
+    
+    // UI overlays
+    if(G.cf>60){X.fillStyle=`rgba(255,255,200,${(G.cf-60)/30*.5})`;X.fillRect(0,0,W,H)}
+    if(G.cf>0&&G.cf<=80){X.save();X.textAlign='center';X.font='bold 38px monospace';X.globalAlpha=Math.min(1,G.cf/20);X.fillStyle='#E040FB';X.fillText('FEAST!',W/2+2,H/2+2);X.fillStyle='#FFCA28';X.fillText('FEAST!',W/2,H/2);X.font='bold 16px monospace';X.fillStyle='#FFF';X.fillText('+500 GALACTIC BONUS',W/2,H/2+28);X.restore()}
+    if(G.htf>0){X.save();X.textAlign='center';X.font='bold 16px monospace';X.globalAlpha=G.htf/40;X.fillStyle='#E53935';X.fillText('❤️ +1 LIFE',W/2,H/2-20);X.restore()}
+    dHUD();
+  }
+  
+  X.restore();
+  
+  if(G.phase===3){
+    X.fillStyle=`rgba(20,0,20,${Math.min(0.85,G.dieT/40*0.85)})`;X.fillRect(0,0,W,H);
+    X.textAlign='center';X.font='bold 22px "Press Start 2P"';X.fillStyle='#EF5350';X.fillText('MISSION FAILED',W/2,H/2-80);
+    X.font='bold 12px "Press Start 2P"';X.fillStyle='#fff';X.fillText('SCORE: '+Math.floor(G.score),W/2,H/2-40);
+    
+    if(G.dieT > 60){
+      X.font='italic 12px "Press Start 2P"';X.fillStyle='#FFEA00';
+      X.fillText('The recipe remains incomplete...', W/2, H/2+20);
+    }
+    if(Math.sin(Date.now()*.005)>.2){X.font='bold 10px "Press Start 2P"';X.fillStyle='#fff';X.fillText('Press SPACE to Restart',W/2,H/2+60)}
+  }
+  
+  requestAnimationFrame(frame);
+  playMusic();
+}
+
+function handleK(e,v){
+  if(['Space','ArrowUp','KeyW'].includes(e.code)) { 
+    if(v && G.phase===-1) { iA(); G.phase=0; document.getElementById('btnStart').style.display='none'; }
+    else if(v && G.phase===3 && G.dieT>30) { reset(); document.getElementById('btn1').style.display='none'; G.phase=0; }
+    else G.keys.shoot=v; 
+    e.preventDefault(); 
+  }
+  if(e.code==='ArrowLeft'||e.code==='KeyA') G.keys.l=v;
+  if(e.code==='ArrowRight'||e.code==='KeyD') G.keys.r=v;
+}
+document.addEventListener('keydown',e=>handleK(e,1));
+document.addEventListener('keyup',e=>handleK(e,0));
+C.addEventListener('touchstart',e=>{
+  e.preventDefault(); iA();
+  if(G.phase===-1) { G.phase=0; document.getElementById('btnStart').style.display='none'; }
+  else if(G.phase===3 && G.dieT>30) { reset(); document.getElementById('btn1').style.display='none'; G.phase=0; }
+  else {
+    G.keys.shoot=1; // auto shoot on touch
+    if(e.touches[0].clientX < window.innerWidth/2) G.keys.l=1;
+    else G.keys.r=1;
+  }
+},{passive:false});
+C.addEventListener('touchend',e=>{G.keys.l=0;G.keys.r=0;G.keys.shoot=0;});
+
+function startStory(){
+  iA();
+  G.phase=0;
+  document.getElementById('btnStart').style.display='none';
+}
+
+reset();frame();
+</script>
+</body>
+</html>

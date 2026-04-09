@@ -160,14 +160,14 @@ function dIntro(){
  if(G.is>=2&&G.is<6){const f=G.is===2?Math.min(1,G.it/30):1;X.globalAlpha=f;
   X.save();X.translate(W/2-50-PX,170-GND);dChar(true);X.restore();
   X.save();X.translate(W/2+50,170-GND);X.scale(-1,1);X.translate(-PX,0);dChar(false);X.restore();X.globalAlpha=1}
- if(G.is>=2&&G.is<=5){const ms=[{w:0,t:'"I\'m hungry..."'},{w:1,t:'"I\'ve got an idea!"'},{w:1,t:'"Menemen?"'},{w:0,t:'"MENEMEN!"',b:1}];
-  for(let m=0;m<=G.is-2;m++){const mg=ms[m],cur=m===G.is-2;X.globalAlpha=cur?Math.min(1,G.it/20):.5;X.font=mg.b?'bold 22px monospace':'14px monospace';X.fillStyle=mg.w===0?'#FFF':'#FFCA28';X.textAlign=mg.w===0?'right':'left';X.fillText(mg.t,mg.w===0?W/2-20:W/2+20,195+m*25)}
+ if(G.is>=2&&G.is<=5){const ms=[{w:0,t:'"We are blessed..."'},{w:1,t:'"Let us share it!"'},{w:1,t:'"Menemen?"'},{w:0,t:'"A FEAST!"',b:1}];
+  for(let m=0;m<=G.is-2;m++){const mg=ms[m],cur=m===G.is-2;X.globalAlpha=cur?Math.min(1,G.it/20):.5;X.font=mg.b?'bold 10px "Press Start 2P"':'8px "Press Start 2P"';X.fillStyle=mg.w===0?'#FFF':'#FFCA28';X.textAlign=mg.w===0?'right':'left';X.fillText(mg.t,mg.w===0?W/2-20:W/2+20,195+m*25)}
   X.globalAlpha=1;X.textAlign='center'}
  if(G.is>=6){const f=Math.min(1,G.it/30);X.globalAlpha=f;X.font='bold 44px monospace';X.fillStyle='#FF6F00';X.fillText('MENEMEN RUN',W/2+2,H/2-8);X.fillStyle='#FFCA28';X.fillText('MENEMEN RUN',W/2,H/2-10);
   if(Math.sin(Date.now()*.004)>.2){X.font='bold 14px monospace';X.fillStyle='#fff';X.fillText('Press SPACE or Tap to Play',W/2,H/2+22)}
   X.font='24px serif';X.fillText('🥚  🍅  🌶️',W/2,H/2+52);X.font='11px monospace';X.fillStyle='rgba(255,255,255,.4)';X.fillText('dodge obstacles · collect ingredients · make menemen',W/2,H/2+78);X.globalAlpha=1}}
 // GAME OVER
-function dOver(){X.fillStyle='rgba(26,26,46,.75)';X.fillRect(0,0,W,H);X.textAlign='center';X.font='bold 28px monospace';X.fillStyle='#EF5350';X.fillText('You forgot to eat.',W/2,80);X.font='bold 18px monospace';X.fillStyle='#FFCA28';X.fillText('Ibo, get the menemen now!',W/2,110);X.font='bold 16px monospace';X.fillStyle='#fff';X.fillText('SCORE: '+G.score,W/2,150);X.fillStyle='#FFD54F';X.fillText('HIGH SCORE: '+G.hi,W/2,172);X.font='16px monospace';X.fillStyle='#B0BEC5';X.fillText('🥚 ×'+G.egg+'    🍅 ×'+G.tom+'    🌶️ ×'+G.pep,W/2,204);if(G.combo){X.fillStyle='#FFCA28';X.font='bold 14px monospace';X.fillText('🎉 MENEMEN COMBO! +50',W/2,228)}if(Math.sin(Date.now()*.005)>.2){X.font='bold 13px monospace';X.fillStyle='#fff';X.fillText('Press SPACE or Tap to Restart',W/2,268)}}
+function dOver(){X.fillStyle='rgba(10,10,30,.85)';X.fillRect(0,0,W,H);X.textAlign='center';X.font='bold 16px "Press Start 2P"';X.fillStyle='#EF5350';X.fillText('PATIENCE...',W/2,80);X.font='bold 10px "Press Start 2P"';X.fillStyle='#FFCA28';X.fillText('God provides in time.',W/2,110);X.font='bold 12px "Press Start 2P"';X.fillStyle='#fff';X.fillText('SCORE: '+G.score,W/2,150);X.fillStyle='#FFD54F';X.fillText('HI: '+G.hi,W/2,172);X.font='8px "Press Start 2P"';X.fillStyle='#B0BEC5';X.fillText('🥚×'+G.egg+' 🍅×'+G.tom+' 🌶️×'+G.pep,W/2,204);if(G.combo){X.fillStyle='#FFCA28';X.font='bold 10px "Press Start 2P"';X.fillText('FEAST OF FELLOWSHIP!',W/2,228)}if(Math.sin(Date.now()*.005)>.2){X.font='bold 10px "Press Start 2P"';X.fillStyle='#fff';X.fillText('Press SPACE to Restart',W/2,268)}}
 function spO(){const t=Math.random()<.4?0:Math.random()<.5?1:2;G.obs.push({x:W+10,type:t,w:[48,30,34][t],h:[22,36,26][t]})}
 function spC(){
  // Pick type — 1 in 8 chance of heart (only if lives<3)
@@ -236,7 +236,7 @@ function frame(){
  else{dSky();if(G.st<.5)dVillage();if(G.st>0)dKitchen();dGnd();for(const o of G.obs)dObs(o);for(const c of G.col)dCol(c);
   if(G.iframes<=0||Math.floor(G.iframes/6)%2===0)dChar(false);dP(); // Playable character is Ibo (false)
   if(G.cf>60){X.fillStyle=`rgba(255,255,200,${(G.cf-60)/30*.5})`;X.fillRect(0,0,W,H)}
-  if(G.cf>0&&G.cf<=80){X.save();X.textAlign='center';X.font='bold 42px monospace';X.globalAlpha=Math.min(1,G.cf/20);X.fillStyle='#FF6F00';X.fillText('MENEMEN!',W/2+2,H/2+2);X.fillStyle='#FFCA28';X.fillText('MENEMEN!',W/2,H/2);X.font='bold 16px monospace';X.fillStyle='#FFF';X.fillText('+50 COMBO BONUS',W/2,H/2+28);X.restore()}
+  if(G.cf>0&&G.cf<=80){X.save();X.textAlign='center';X.font='bold 22px "Press Start 2P"';X.globalAlpha=Math.min(1,G.cf/20);X.fillStyle='#FF6F00';X.fillText('FEAST!',W/2+2,H/2+2);X.fillStyle='#FFCA28';X.fillText('FEAST!',W/2,H/2);X.font='bold 10px "Press Start 2P"';X.fillStyle='#FFF';X.fillText('+50 BLESSED BONUS',W/2,H/2+28);X.restore()}
   if(G.htf>0){X.save();X.textAlign='center';X.font='bold 16px monospace';X.globalAlpha=G.htf/40;X.fillStyle='#E53935';X.fillText('❤️ +1 LIFE',W/2,H/2-20);X.restore()}
   if(G.phase>=1)dHUD()}
  X.restore();

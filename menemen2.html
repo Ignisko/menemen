@@ -323,7 +323,7 @@ function dStory(){
   dChar(true, W/2-70, H/2+100); // Iggy (Polish)
   X.save();X.translate(W,0);X.scale(-1,1);dChar(false, W/2-70, H/2+100);X.restore(); // Ibo (Turkish)
   
-  const ms=[{w:0,t:'"I\'m hungry..."'},{w:1,t:'"I\'ve got an idea!"'},{w:0,t:'"Menemen?"'},{w:1,t:'"MENEMEN!"',b:1}];
+  const ms=[{w:0,t:'"The ocean is a gift..."'},{w:1,t:'"Let us share it!"'},{w:0,t:'"Menemen?"'},{w:1,t:'"FOR THE VILLAGE!"',b:1}];
   for(let m=0;m<ms.length;m++){
     const threshold = 80 + m*80;
     if(G.is>0 || G.it > threshold){
@@ -376,12 +376,12 @@ function frame(){
  X.restore();
   if(G.phase===3){
    X.fillStyle=`rgba(0,0,0,${Math.min(0.8,G.dieT/40*0.8)})`;X.fillRect(0,0,W,H);
-   X.textAlign='center';X.font='bold 22px "Press Start 2P"';X.fillStyle='#EF5350';X.fillText('CRUSHED!',W/2,H/2-80);
+   X.textAlign='center';X.font='bold 22px "Press Start 2P"';X.fillStyle='#EF5350';X.fillText('PERSEVERE!',W/2,H/2-80);
    X.font='bold 12px "Press Start 2P"';X.fillStyle='#fff';X.fillText('DEPTH: '+Math.floor(G.score)+'m',W/2,H/2-40);
    
    if(G.dieT > 60){
      X.font='italic 12px "Press Start 2P"';X.fillStyle='#FFEA00';
-     X.fillText('Ibo, where is the menemen?', W/2, H/2+20);
+     X.fillText('Patience... try again with faith.', W/2, H/2+20);
    }
 
    if(Math.sin(Date.now()*.005)>.2){X.font='bold 10px "Press Start 2P"';X.fillStyle='#fff';X.fillText('Press ANY KEY to Restart',W/2,H/2+60)}
