@@ -3,14 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menemen: The Dual Adventure</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap" rel="stylesheet">
+    <title>Menemen: Arcade Edition</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
         :root {
-            --orange: #FF6F00;
-            --yellow: #FFCA28;
-            --blue: #0077be;
-            --dark: #1a1a2e;
+            --neon-orange: #FF6F00;
+            --neon-yellow: #FFEA00;
+            --neon-blue: #00E5FF;
+            --bg-dark: #000000;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.97; }
+            5% { opacity: 0.95; }
+            10% { opacity: 0.9; }
+            15% { opacity: 0.95; }
+            20% { opacity: 0.98; }
+            25% { opacity: 0.95; }
+            30% { opacity: 1; }
+            70% { opacity: 0.98; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
         }
 
         * {
@@ -20,14 +37,27 @@
         }
 
         body {
-            font-family: 'Outfit', sans-serif;
-            background: var(--dark);
+            font-family: 'Press Start 2P', cursive;
+            background: var(--bg-dark);
             height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
             color: white;
+            position: relative;
+        }
+
+        /* CRT Overlay */
+        body::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 50;
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
         }
 
         .background {
@@ -38,106 +68,112 @@
             height: 100%;
             background: url('menemen_hub_background.png') no-repeat center center;
             background-size: cover;
-            opacity: 0.6;
+            opacity: 0.4;
             z-index: -1;
-            filter: blur(2px);
-            transition: transform 0.5s ease;
+            image-rendering: pixelated;
+            filter: contrast(150%) brightness(80%);
+            animation: flicker 0.1s infinite;
         }
 
         .container {
-            width: 90%;
-            max-width: 1000px;
+            width: 95%;
+            max-width: 1100px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 40px;
+            gap: 60px;
             z-index: 10;
         }
 
         h1 {
-            font-size: 4rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            font-size: 2.5rem;
+            color: var(--neon-yellow);
+            text-shadow: 4px 4px #FF00FF, -4px -4px #00FFFF;
             text-align: center;
-            background: linear-gradient(to bottom, #fff, #bbb);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            letter-spacing: 6px;
+            line-height: 1.4;
         }
 
         .games {
             display: flex;
-            gap: 30px;
+            gap: 40px;
             width: 100%;
         }
 
         .card {
             flex: 1;
-            height: 400px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-            overflow: hidden;
+            height: 350px;
+            background: rgba(4, 4, 15, 0.85);
+            border: 4px solid #fff;
             position: relative;
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.2s steps(4);
             display: flex;
             flex-direction: column;
             justify-content: flex-end;
-            padding: 30px;
+            padding: 25px;
             text-decoration: none;
             color: white;
+            box-shadow: 10px 10px 0px rgba(0,255,255,0.3);
         }
 
         .card:hover {
-            transform: translateY(-15px) scale(1.02);
-            border-color: rgba(255, 255, 255, 0.4);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            transform: translate(-5px, -5px);
+            box-shadow: 15px 15px 0px rgba(255,0,255,0.5);
+            border-color: var(--neon-yellow);
         }
 
         .card.game1 {
-            background: linear-gradient(to bottom, transparent, rgba(255, 111, 0, 0.8));
+            border-color: var(--neon-orange);
         }
 
         .card.game2 {
-            background: linear-gradient(to bottom, transparent, rgba(0, 119, 190, 0.8));
+            border-color: var(--neon-blue);
         }
 
         .card h2 {
-            font-size: 2rem;
-            margin-bottom: 10px;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: #fff;
+            text-transform: uppercase;
         }
 
         .card p {
-            font-size: 1rem;
-            opacity: 0.8;
-            line-height: 1.4;
+            font-size: 0.7rem;
+            color: #bbb;
+            line-height: 1.8;
+            text-transform: uppercase;
         }
 
         .card .badge {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            background: white;
-            color: black;
-            padding: 5px 15px;
-            border-radius: 20px;
+            top: 15px;
+            right: 15px;
+            background: #fff;
+            color: #000;
+            padding: 8px 12px;
             font-weight: bold;
+            font-size: 0.6rem;
+        }
+
+        .insert-coin {
+            margin-top: 30px;
             font-size: 0.8rem;
+            color: var(--neon-yellow);
+            animation: flicker 1.5s infinite;
             text-transform: uppercase;
         }
 
         @media (max-width: 768px) {
             .games {
                 flex-direction: column;
+                gap: 20px;
             }
             .card {
-                height: 250px;
+                height: 200px;
             }
             h1 {
-                font-size: 2.5rem;
+                font-size: 1.5rem;
             }
         }
     </style>
@@ -145,27 +181,38 @@
 <body>
     <div class="background"></div>
     <div class="container">
-        <h1>Select Your Journey</h1>
+        <h1>MENEMEN<br>CORE HUB</h1>
         <div class="games">
             <a href="menemen1.html" class="card game1">
-                <div class="badge">Runner</div>
-                <h2>Village Run</h2>
-                <p>Run through the Turkish countryside, collect ingredients, and outrun the pans!</p>
+                <div class="badge">CHASE</div>
+                <h2>VILLAGE RUN</h2>
+                <p>COLLECT THE INGREDIENTS. OUTRUN THE HUNGER.</p>
             </a>
             <a href="menemen2.html" class="card game2">
-                <div class="badge">Descent</div>
-                <h2>Ocean Descent</h2>
-                <p>Dive deep into the mystic ocean. Follow floating sea life to reach the legendary Menemen depth.</p>
+                <div class="badge">DIVE</div>
+                <h2>OCEAN DESCENT</h2>
+                <p>FREE FALL INTO THE BLUE. DODGE THE MINES.</p>
             </a>
         </div>
+        <div class="insert-coin">SELECT PLAYER START</div>
     </div>
 
     <script>
-        // Subtle mouse parallax for the background
-        document.addEventListener('mousemove', (e) => {
-            const moveX = (e.clientX - window.innerWidth / 2) / 50;
-            const moveY = (e.clientY - window.innerHeight / 2) / 50;
-            document.querySelector('.background').style.transform = `translate(${moveX}px, ${moveY}px) scale(1.05)`;
+        // Retro glitch effect on hover
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                const audio = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audio.createOscillator();
+                const gain = audio.createGain();
+                osc.connect(gain);
+                gain.connect(audio.destination);
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(150, audio.currentTime);
+                gain.gain.setValueAtTime(0.05, audio.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audio.currentTime + 0.1);
+                osc.start();
+                osc.stop(audio.currentTime + 0.1);
+            });
         });
     </script>
 </body>
