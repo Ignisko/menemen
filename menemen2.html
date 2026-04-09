@@ -239,9 +239,9 @@ function update(){
  if(G.x<PW/2) G.x=PW/2; if(G.x>W-PW/2) G.x=W-PW/2;
  
  // Swimming buoyancy
- if(G.keys.j) G.vy -= 0.8;
- G.vy += 0.35; // Gravity
- if(G.vy>6) G.vy=6; if(G.vy<-8) G.vy=-8;
+ if(G.keys.j) G.vy -= 0.5;
+ G.vy += 0.12; // Lower Gravity (was 0.35)
+ if(G.vy>3.5) G.vy=3.5; if(G.vy<-6) G.vy=-6; // Lower terminal velocity (was 6)
  G.y += G.vy;
 
  for(let i=G.entities.length-1;i>=0;i--){
