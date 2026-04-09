@@ -12,6 +12,9 @@ canvas{max-width:100%;height:auto;image-rendering:pixelated;border-radius:6px;bo
 </style>
 </head>
 <body>
+<div id="ui" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;">
+  <a id="btn2" href="menemen2.html" style="pointer-events:auto;display:none;margin-top:140px;padding:10px 20px;background:#FFCA28;color:#1a1a2e;text-decoration:none;font-weight:bold;border-radius:20px;font-family:monospace;box-shadow:0 4px 10px rgba(0,0,0,0.5);transform:scale(1);border:2px solid #FF6F00;">Play Menemen 2: Ocean</a>
+</div>
 <canvas id="c"></canvas>
 <script>
 const C=document.getElementById('c'),X=C.getContext('2d');
@@ -56,24 +59,32 @@ function dVillage(){
  X.globalAlpha=1}
 function dKitchen(){const a=Math.min(1,G.st);if(a<=0)return;X.globalAlpha=a;X.fillStyle='#F5E0C0';X.fillRect(0,0,W,GND);X.fillStyle='#EDD5B0';for(let i=-1;i<12;i++){const x=i*80-(G.bx*.5%80);X.fillRect(x+1,60,78,78)}for(let i=-1;i<5;i++){const x=i*220-(G.bx*.7%220);X.fillStyle='#8D6E42';X.fillRect(x,90,140,6);X.fillRect(x,155,140,6);X.fillStyle='#607D8B';X.fillRect(x+10,70,22,20);X.fillRect(x+12,65,18,5);X.fillRect(x+50,75,18,15);X.fillStyle='#BF360C';X.fillRect(x+85,68,24,22);X.fillRect(x+88,62,18,6);X.fillStyle='#ECEFF1';X.fillRect(x+15,142,18,13);X.fillRect(x+55,145,22,10);X.fillStyle='#FFCC80';X.fillRect(x+95,140,20,15)}X.globalAlpha=1}
 function dGnd(){X.fillStyle=pc('gndD');X.fillRect(0,GND,W,3);X.fillStyle=pc('gnd');X.fillRect(0,GND+3,W,H-GND-3);X.fillStyle=pc('tile');for(let i=-1;i<14;i++){const x=i*70-(G.bx2%70);X.fillRect(x,GND+12,50,2);X.fillRect(x+25,GND+3,2,10)}}
-function dChar(){
+function dChar(isIggy=false){
  const cr=G.crouching,ia=G.y<GND,h=cr?30:PH,bot=G.y,top=bot-h,cx=PX-PW/2,mx=PX;
  if(!cr){const w=G.phase===1&&!ia,lf=w?Math.floor(G.walkF/5)%4:0,os=[5,-5,-5,5],lo=ia?-4:os[lf]||0,l2=ia?-4:-lo;
-  X.fillStyle='#37241A';X.fillRect(cx+5,top+35,6,11+lo);X.fillRect(cx+17,top+35,6,11+l2);X.fillStyle='#1B0F08';X.fillRect(cx+4,top+45+lo,8,4);X.fillRect(cx+16,top+45+l2,8,4)}
- else{X.fillStyle='#37241A';X.fillRect(cx+4,top+22,9,7);X.fillRect(cx+15,top+22,9,7)}
+  X.fillStyle=isIggy?'#5C4033':'#37241A';X.fillRect(cx+5,top+35,6,11+lo);X.fillRect(cx+17,top+35,6,11+l2);X.fillStyle=isIggy?'#3e2723':'#1B0F08';X.fillRect(cx+4,top+45+lo,8,4);X.fillRect(cx+16,top+45+l2,8,4)}
+ else{X.fillStyle=isIggy?'#5C4033':'#37241A';X.fillRect(cx+4,top+22,9,7);X.fillRect(cx+15,top+22,9,7)}
  const by=cr?top+12:top+20,bh=cr?10:15;
- X.fillStyle='#FFF8F0';X.fillRect(cx+4,by,20,bh);X.fillStyle='#7B1818';X.fillRect(cx+4,by,6,bh);X.fillRect(cx+18,by,6,bh);X.fillStyle='#DAA520';X.fillRect(cx+9,by,2,bh);X.fillRect(cx+17,by,2,bh);X.fillRect(cx+13,by+3,2,2);if(bh>10)X.fillRect(cx+13,by+8,2,2);
+ X.fillStyle=isIggy?'#C19A6B':'#FFF8F0';X.fillRect(cx+4,by,20,bh);X.fillStyle=isIggy?'#8B5A2B':'#7B1818';X.fillRect(cx+4,by,6,bh);X.fillRect(cx+18,by,6,bh);X.fillStyle='#DAA520';X.fillRect(cx+9,by,2,bh);X.fillRect(cx+17,by,2,bh);X.fillRect(cx+13,by+3,2,2);if(bh>10)X.fillRect(cx+13,by+8,2,2);
  const hh=cr?11:18,hy=top,hcx=mx,hcy=hy+hh/2+1;
- X.fillStyle='#F5E6D0';X.beginPath();X.moveTo(hcx,hy+hh+1);X.bezierCurveTo(hcx-14,hcy+2,hcx-12,hy-1,hcx,hy-2);X.bezierCurveTo(hcx+12,hy-1,hcx+14,hcy+2,hcx,hy+hh+1);X.fill();
- X.strokeStyle='#D4C4A8';X.lineWidth=1;X.beginPath();X.moveTo(hcx,hy+hh+1);X.bezierCurveTo(hcx-14,hcy+2,hcx-12,hy-1,hcx,hy-2);X.bezierCurveTo(hcx+12,hy-1,hcx+14,hcy+2,hcx,hy+hh+1);X.stroke();
+ X.fillStyle=isIggy?'#FFCBA4':'#FFE0BD';X.beginPath();X.moveTo(hcx,hy+hh+1);X.bezierCurveTo(hcx-14,hcy+2,hcx-12,hy-1,hcx,hy-2);X.bezierCurveTo(hcx+12,hy-1,hcx+14,hcy+2,hcx,hy+hh+1);X.fill();
+ X.strokeStyle=isIggy?'#E3A881':'#D4C4A8';X.lineWidth=1;X.beginPath();X.moveTo(hcx,hy+hh+1);X.bezierCurveTo(hcx-14,hcy+2,hcx-12,hy-1,hcx,hy-2);X.bezierCurveTo(hcx+12,hy-1,hcx+14,hcy+2,hcx,hy+hh+1);X.stroke();
  if(!cr){X.strokeStyle='#1A1A1A';X.lineWidth=2;X.beginPath();X.moveTo(hcx-9,hcy-1);X.quadraticCurveTo(hcx-5,hcy-6,hcx-1,hcy-2);X.stroke();X.beginPath();X.moveTo(hcx+1,hcy-2);X.quadraticCurveTo(hcx+5,hcy-6,hcx+9,hcy-1);X.stroke();
   X.fillStyle='#1A1A1A';X.fillRect(hcx-7,hcy-1,3,3);X.fillRect(hcx+4,hcy-1,3,3);
-  X.lineWidth=2;X.strokeStyle='#1A1A1A';X.fillStyle='#1A1A1A';X.beginPath();X.moveTo(hcx-1,hcy+3);X.quadraticCurveTo(hcx-6,hcy+5,hcx-11,hcy+1);X.stroke();X.beginPath();X.moveTo(hcx+1,hcy+3);X.quadraticCurveTo(hcx+6,hcy+5,hcx+11,hcy+1);X.stroke();X.beginPath();X.arc(hcx,hcy+3,2,0,Math.PI,true);X.fill();
-  X.strokeStyle='#8B6050';X.lineWidth=1;X.beginPath();X.arc(hcx,hcy+4,4,.15*Math.PI,.85*Math.PI);X.stroke();
-  X.fillStyle='rgba(210,100,90,.2)';X.beginPath();X.arc(hcx-8,hcy+2,3,0,Math.PI*2);X.fill();X.beginPath();X.arc(hcx+8,hcy+2,3,0,Math.PI*2);X.fill();
-  X.fillStyle='#2A1A0A';X.beginPath();X.moveTo(hcx-2,hcy+6);X.lineTo(hcx,hcy+9);X.lineTo(hcx+2,hcy+6);X.fill()}
- else{X.fillStyle='#1A1A1A';X.fillRect(hcx-6,hcy-1,3,2);X.fillRect(hcx+3,hcy-1,3,2)}
- const fY=hy-5;X.fillStyle='#B22222';X.beginPath();X.moveTo(hcx-7,hy);X.lineTo(hcx-5,fY);X.lineTo(hcx+5,fY);X.lineTo(hcx+7,hy);X.fill();X.fillRect(hcx-6,fY,12,3);X.strokeStyle='#1A1A1A';X.lineWidth=1.5;X.beginPath();X.moveTo(hcx+4,fY);X.quadraticCurveTo(hcx+10,fY-2,hcx+9,fY+5);X.stroke();X.fillStyle='#1A1A1A';X.beginPath();X.arc(hcx+9,fY+5,2,0,Math.PI*2);X.fill()}
+  if(!isIggy){ // Ibo Guy Fawkes beard
+   X.fillStyle='#2B2B2B';X.beginPath();X.moveTo(hcx-3,hcy+8);X.lineTo(hcx+3,hcy+8);X.lineTo(hcx,hcy+14);X.fill();
+   X.beginPath();X.moveTo(hcx-8,hcy+4);X.quadraticCurveTo(hcx,hcy,hcx+8,hcy+4);X.lineTo(hcx+8,hcy+5);X.quadraticCurveTo(hcx,hcy+1,hcx-8,hcy+5);X.fill();
+  } else { // Iggy mouth
+   X.fillStyle='#1A1A1A';X.lineWidth=2;X.beginPath();X.moveTo(hcx-1,hcy+3);X.quadraticCurveTo(hcx-6,hcy+5,hcx-11,hcy+1);X.stroke();X.beginPath();X.moveTo(hcx+1,hcy+3);X.quadraticCurveTo(hcx+6,hcy+5,hcx+11,hcy+1);X.stroke();X.beginPath();X.arc(hcx,hcy+3,2,0,Math.PI,true);X.fill();
+  }
+ }else{X.fillStyle='#1A1A1A';X.fillRect(hcx-6,hcy-1,3,2);X.fillRect(hcx+3,hcy-1,3,2)}
+ if(isIggy){ // Indiana Jones Fedora
+  const fY=hy-2;X.fillStyle='#654321';X.beginPath();X.ellipse(hcx,fY+4,15,4,0,0,Math.PI*2);X.fill();
+  X.fillRect(hcx-9,fY-8,18,12);X.fillStyle='#1A1A1A';X.fillRect(hcx-9,fY,18,3);
+ }else{ // Dark natural hair for Ibo
+  const fY=hy-1;X.fillStyle='#2B2B2B';X.beginPath();X.arc(hcx,fY+4,12,Math.PI,0);X.fill();
+ }
+}
 function dObs(o){
   if(o.type===4){// Menemen Monster (Boss)
     const x=o.x,y=o.y,w=o.w,h=o.h,f=G.f;
@@ -120,8 +131,8 @@ function dIntro(){
  if(G.is>=0){X.globalAlpha=G.is===0?Math.min(1,G.it/40):1;X.font='italic bold 22px Georgia,serif';X.fillStyle='#FFCA28';X.fillText('Once upon a time...',W/2,40);X.globalAlpha=1}
  if(G.is>=1&&G.is<6){X.globalAlpha=G.is===1?Math.min(1,G.it/40):1;X.font='italic 15px Georgia,serif';X.fillStyle='#B0BEC5';X.fillText('in a small Turkish village...',W/2,62);X.globalAlpha=1}
  if(G.is>=2&&G.is<6){const f=G.is===2?Math.min(1,G.it/30):1;X.globalAlpha=f;
-  X.save();X.translate(W/2-50-PX,170-GND);dChar();X.restore();
-  X.save();X.translate(W/2+50,170-GND);X.scale(-1,1);X.translate(-PX,0);dChar();X.restore();X.globalAlpha=1}
+  X.save();X.translate(W/2-50-PX,170-GND);dChar(true);X.restore();
+  X.save();X.translate(W/2+50,170-GND);X.scale(-1,1);X.translate(-PX,0);dChar(false);X.restore();X.globalAlpha=1}
  if(G.is>=2&&G.is<=5){const ms=[{w:0,t:'"I\'m hungry..."'},{w:1,t:'"I\'ve got an idea!"'},{w:1,t:'"Menemen?"'},{w:0,t:'"MENEMEN!"',b:1}];
   for(let m=0;m<=G.is-2;m++){const mg=ms[m],cur=m===G.is-2;X.globalAlpha=cur?Math.min(1,G.it/20):.5;X.font=mg.b?'bold 22px monospace':'14px monospace';X.fillStyle=mg.w===0?'#FFF':'#FFCA28';X.textAlign=mg.w===0?'right':'left';X.fillText(mg.t,mg.w===0?W/2-20:W/2+20,195+m*25)}
   X.globalAlpha=1;X.textAlign='center'}
@@ -196,7 +207,7 @@ function frame(){
  X.save();X.translate(sx,sy);
  if(G.phase===0){dIntro()}
  else{dSky();if(G.st<.5)dVillage();if(G.st>0)dKitchen();dGnd();for(const o of G.obs)dObs(o);for(const c of G.col)dCol(c);
-  if(G.iframes<=0||Math.floor(G.iframes/6)%2===0)dChar();dP();
+  if(G.iframes<=0||Math.floor(G.iframes/6)%2===0)dChar(false);dP(); // Playable character is Ibo (false)
   if(G.cf>60){X.fillStyle=`rgba(255,255,200,${(G.cf-60)/30*.5})`;X.fillRect(0,0,W,H)}
   if(G.cf>0&&G.cf<=80){X.save();X.textAlign='center';X.font='bold 42px monospace';X.globalAlpha=Math.min(1,G.cf/20);X.fillStyle='#FF6F00';X.fillText('MENEMEN!',W/2+2,H/2+2);X.fillStyle='#FFCA28';X.fillText('MENEMEN!',W/2,H/2);X.font='bold 16px monospace';X.fillStyle='#FFF';X.fillText('+50 COMBO BONUS',W/2,H/2+28);X.restore()}
   if(G.htf>0){X.save();X.textAlign='center';X.font='bold 16px monospace';X.globalAlpha=G.htf/40;X.fillStyle='#E53935';X.fillText('❤️ +1 LIFE',W/2,H/2-20);X.restore()}
@@ -204,6 +215,11 @@ function frame(){
  X.restore();
  if(G.phase===2){X.fillStyle=`rgba(180,0,0,${Math.min(.15,G.dieT/40*.15)})`;X.fillRect(0,0,W,H)}
  if(G.phase===3)dOver();
+ 
+ const btn2 = document.getElementById('btn2');
+ if((G.phase===0 && G.is>=6) || G.phase===3) btn2.style.display='block';
+ else btn2.style.display='none';
+
  requestAnimationFrame(frame)}
 reset();frame();
 </script>
