@@ -22,6 +22,7 @@ body::before {
 <body>
 <div id="ui" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;">
   <a id="btn2" href="menemen2.html" style="pointer-events:auto;display:none;margin-top:140px;padding:10px 20px;background:#FFCA28;color:#1a1a2e;text-decoration:none;font-weight:bold;border-radius:20px;font-family:monospace;box-shadow:0 4px 10px rgba(0,0,0,0.5);transform:scale(1);border:2px solid #FF6F00;">Play Menemen 2: Ocean</a>
+  <a id="btn3" href="index.html" style="pointer-events:auto;display:none;margin-top:20px;padding:10px 20px;background:#eee;color:#000;text-decoration:none;font-weight:bold;border-radius:20px;font-family:monospace;box-shadow:0 4px 10px rgba(0,0,0,0.5);border:2px solid #333;">RETURN TO HUB</a>
 </div>
 <canvas id="c"></canvas>
 <script>
@@ -243,9 +244,9 @@ function frame(){
  if(G.phase===2){X.fillStyle=`rgba(180,0,0,${Math.min(.15,G.dieT/40*.15)})`;X.fillRect(0,0,W,H)}
  if(G.phase===3)dOver();
  
- const btn2 = document.getElementById('btn2');
- if((G.phase===0 && G.is>=6) || G.phase===3) btn2.style.display='block';
- else btn2.style.display='none';
+  const btn2 = document.getElementById('btn2'), btn3 = document.getElementById('btn3');
+  if((G.phase===0 && G.is>=6) || G.phase===3){ btn2.style.display='block'; btn3.style.display='block'; }
+  else { btn2.style.display='none'; btn3.style.display='none'; }
 
  requestAnimationFrame(frame);
  playMusic();

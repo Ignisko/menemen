@@ -17,12 +17,12 @@ body::before {
     z-index: 100; background-size: 100% 2px, 3px 100%; pointer-events: none;
 }
 
-#ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100}
+#ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:200}
 #btn1, #btnStart, #btnStory{pointer-events:auto;display:none;margin-top:20px;padding:14px 28px;background:#E040FB;color:#000;text-decoration:none;font-weight:bold;border:4px solid #fff;cursor:pointer;font-family:inherit;font-size:16px;transition:0.1s;box-shadow:6px 6px 0 rgba(0,0,0,0.4)}
 #btnStart{background:#76FF03;color:#000;border-color:#fff}
 #btnStory{display:block;margin-top:0}
 #btnStory:hover, #btnStart:hover, #btn1:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 rgba(0,0,0,0.5)}
-#btn1{margin-top:140px;background:rgba(156,39,176,0.8);color:#fff;border-color:rgba(255,255,255,0.5)}
+#btn1{margin-top:120px;background:rgba(156,39,176,0.8);color:#fff;border-color:rgba(255,255,255,0.5)}
 
 /* Star Wars Crawl Styles */
 #introContainer {
@@ -556,13 +556,13 @@ function frame(){
 
 function handleK(e,v){
   if(['Space','ArrowUp','KeyW'].includes(e.code)) { 
-    if(v && G.phase===-2) { initiateStory(); }
-    else if(v && G.phase===-1) { showInstructions(); }
-    else if(v && G.phase===0) { startLevel(); }
-    else if(v && G.phase===3 && G.dieT>30) { reset(); document.getElementById('btn1').style.display='none'; initiateStory(); }
-    else G.keys.shoot=v; 
-    e.preventDefault(); 
-  }
+  if(v && G.phase===-2) { initiateStory(); }
+  else if(v && G.phase===-1) { showInstructions(); }
+  else if(v && G.phase===0) { startLevel(); }
+  else if(v && G.phase===3 && G.dieT>30) { reset(); document.getElementById('btn1').style.display='none'; initiateStory(); }
+  else G.keys.shoot=v; 
+  e.preventDefault(); 
+ }
   if(e.code==='ArrowLeft'||e.code==='KeyA') G.keys.l=v;
   if(e.code==='ArrowRight'||e.code==='KeyD') G.keys.r=v;
 }
