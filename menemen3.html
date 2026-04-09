@@ -120,11 +120,16 @@ function playIntroMusic(){
   });
 }
 
+function lHi(){try{return parseInt(localStorage.getItem('menemen3Hi'))||0}catch(e){return 0}}
+function sHi(){try{localStorage.setItem('menemen3Hi',G.hi)}catch(e){}}
+function lLast(){try{return parseInt(localStorage.getItem('menemen3Last'))||0}catch(e){return 0}}
+function sLast(s){try{localStorage.setItem('menemen3Last',s)}catch(e){}}
+
 function reset(){
   G={
    phase:-2, is:0, it:0,
    x:W/2, y:H-80, vx:0, 
-   score:0, hi:lHi(),
+   score:0, hi:lHi(), last:lLast(),
    bullets:[], enemies:[], pts:[], stars:[], drops:[],
    egg:0, tom:0, pep:0, combo:false, cf:0,
    lives:3, iframes:0, htf:0,
@@ -428,6 +433,18 @@ function update(){
   if(G.shake>0.1) G.shake *= 0.9; else G.shake = 0;
 }
 
+function playerHit(){
+  G.lives--; G.iframes=120; G.shake=8;
+  aP(G.x,G.y,25,'#FFCA28',6);
+  tn(100,20,.4,.3); 
+  if(G.lives<=0){
+    G.phase=3; G.dieT=0; G.shake=12;
+    if(G.score>G.hi){G.hi=G.score;sHi()}
+    sLast(Math.floor(G.score));
+    document.getElementById('btn1').style.display='block';
+  }
+}
+
 function spawnBoss(){
   G.bossActive = true;
   G.bossHP = G.bossMaxHP;
@@ -440,6 +457,7 @@ function spawnBoss(){
 function dHUD(){
   X.font='bold 10px "Press Start 2P"';X.textAlign='left';X.fillStyle='rgba(255,255,255,.3)';X.fillText('SCORE',12,22);X.fillStyle='#FFF';X.fillText(Math.floor(G.score),12,40);
   X.textAlign='right';X.fillStyle='rgba(255,255,255,.3)';X.fillText('HI',W-12,22);X.fillStyle='#E040FB';X.fillText(Math.floor(G.hi),W-12,40);
+  X.textAlign='right';X.fillStyle='rgba(255,255,255,.2)';X.fillText('LAST',W-12,60);X.fillStyle='#BDBDBD';X.fillText(Math.floor(G.last),W-12,78);
   for(let i=0;i<3;i++){X.fillStyle=i<G.lives?'#FF1744':'rgba(255,255,255,.1)';const hx=W/2-30+i*30,hy=14;X.beginPath();X.moveTo(hx,hy+5);X.bezierCurveTo(hx-10,hy-5,hx-10,hy-15,hx,hy-8);X.bezierCurveTo(hx+10,hy-15,hx+10,hy-5,hx,hy+5);X.fill()}
   X.textAlign='left';const ix=12,iy=62;
   X.fillStyle=G.egg>0?'#FF5252':'rgba(255,255,255,.2)';X.fillText('🍓'+G.egg,ix,iy);
@@ -523,6 +541,7 @@ function frame(){
     X.fillStyle=`rgba(20,0,20,${Math.min(0.85,G.dieT/40*0.85)})`;X.fillRect(0,0,W,H);
     X.textAlign='center';X.font='bold 22px "Press Start 2P"';X.fillStyle='#EF5350';X.fillText('MISSION FAILED',W/2,H/2-80);
     X.font='bold 12px "Press Start 2P"';X.fillStyle='#fff';X.fillText('SCORE: '+Math.floor(G.score),W/2,H/2-40);
+    X.fillStyle='#BDBDBD';X.font='bold 10px "Press Start 2P"';X.fillText('LAST RUN: '+Math.floor(G.last),W/2,H/2-10);
     
     if(G.dieT > 60){
       X.font='italic 12px "Press Start 2P"';X.fillStyle='#FFEA00';
