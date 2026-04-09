@@ -10,11 +10,11 @@
 html,body{width:100%;height:100%;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;user-select:none;font-family:'Press Start 2P', cursive}
 canvas{max-width:100%;height:auto;max-height:100vh;image-rendering:pixelated;border:4px solid #333;box-shadow:0 0 40px rgba(0,180,255,.3)}
 
-/* CRT Overlay */
+/* CRT Overlay (Vivid Amazing Grid) */
 body::before {
     content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
-    z-index: 100; background-size: 100% 4px, 6px 100%; pointer-events: none;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+    z-index: 100; background-size: 100% 2px, 3px 100%; pointer-events: none;
 }
 
 #ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100}
