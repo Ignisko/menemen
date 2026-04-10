@@ -94,14 +94,14 @@
 
         .games {
             display: flex;
+            flex-wrap: wrap;
             gap: 20px;
             width: 100%;
-            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .card {
-            flex: 1;
-            min-width: 200px;
+            flex: 0 0 180px;
             height: 350px;
             background: rgba(4, 4, 15, 0.85);
             border: 4px solid #fff;
@@ -188,33 +188,25 @@
             text-transform: uppercase;
         }
 
-        @media (max-width: 768px) {
-            .games {
-                flex-direction: column;
-                gap: 20px;
-            }
+        @media (max-width: 1200px) {
             .card {
+                flex: 0 0 200px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .card {
+                flex: 0 0 45%;
                 height: 200px;
             }
             h1 {
                 font-size: 1.5rem;
             }
         }
-        
-        @media (max-width: 1024px) {
-            .games {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            .card {
-                min-width: 45%;
-                max-width: 300px;
-            }
-        }
 
         @media (max-width: 480px) {
             .card {
-                min-width: 90%;
+                flex: 0 0 90%;
             }
         }
     </style>
