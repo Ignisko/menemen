@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximumscale=1,user-scalable=no">
+<title>Menemen 5: Mountain Trail</title>
+<meta name="description" content="Hike the mountain trail, collect menemen ingredients, and defeat the Trail Boss!">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;-webkit-touch-callout:none;user-select:none;font-family:'Press Start 2P', cursive}
+canvas{max-width:100%;height:auto;image-rendering:pixelated;border:4px solid #4CAF50;box-shadow:0 0 40px rgba(76,175,80,0.3);position:relative;z-index:10}
+
+/* CRT Overlay */
+body::before {
+    content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+    z-index: 100; background-size: 100% 2px, 3px 100%; pointer-events: none;
+}
+
+#ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;z-index:300}
+#btn1, #btnStart, #btnStory{pointer-events:auto;display:none;padding:14px 28px;background:#4CAF50;color:#fff;text-decoration:none;font-weight:bold;border:4px solid #fff;cursor:pointer;font-family:inherit;font-size:12px;transition:0.1s;box-shadow:6px 6px 0 rgba(0,0,0,0.4)}
+#btnStart{background:#8BC34A;color:#000;border-color:#fff;z-index:301}
+#btnStory{display:block;z-index:301;background:#2E7D32}
+#btnStory:hover, #btnStart:hover, #btn1:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 rgba(0,0,0,0.5)}
+#btn1{background:rgba(76,175,80,0.8);color:#fff;border-color:rgba(255,255,255,0.5)}
+</style>
+</head>
+<body>
+<div id="ui">
+   <button id="btnStory" onclick="showIntro()">START HIKE</button>
+   <button id="btnStart" onclick="startLevel()">BEGIN TRAIL</button>
+   <a id="btn1" href="index.html">RETURN TO HUB</a>
+ </div>
+
+<canvas id="c"></canvas>
+<script>
+const C=document.getElementById('c'),X=C.getContext('2d');
+const W=500,H=700;
+C.width=W;C.height=H;
+
+let AC=null;
+function iA(){if(!AC)try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}
+function tn(f1,f2,d,v,t='sine'){if(!AC)return;try{const o=AC.createOscillator(),g=AC.createGain();o.connect(g);g.connect(AC.destination);o.type=t;o.frequency.setValueAtTime(f1,AC.currentTime);o.frequency.linearRampToValueAtTime(f2,AC.currentTime+d);g.gain.setValueAtTime(v||.12,AC.currentTime);g.gain.linearRampToValueAtTime(0,AC.currentTime+d);o.start();o.stop(AC.currentTime+d)}catch(e){}}
+
+const sJump=()=>tn(250,550,.1,.1,'square');
+const sCollect=()=>tn(600,1000,.1,.15,'square');
+const sHit=()=>tn(300,50,.3,.2,'sawtooth');
+const sBoss=()=>{tn(150,400,.3,.2,'sawtooth');tn(200,500,.4,.15,'square')};
+
+let nextBeat=0,beatIdx=0;
+function playMusic(){
+  if(!AC||G.phase!==1)return;
+  if(AC.currentTime>nextBeat){
+    const freq=[110,110,164,110,220,110,164,130][beatIdx%8];
+    const mod=beatIdx%4===0?1:0.5;
+    const o=AC.createOscillator(),g=AC.createGain(),m=AC.createOscillator(),mg=AC.createGain();
+    o.type='square';m.type='sine';m.frequency.value=freq*1.4;mg.gain.value=200;
+    m.connect(mg);mg.connect(o.frequency);o.connect(g);g.connect(AC.destination);
+    o.frequency.setValueAtTime(freq,AC.currentTime);
+    g.gain.setValueAtTime(0.04*mod,AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+0.15);
+    o.start();m.start();o.stop(AC.currentTime+0.15);m.stop(AC.currentTime+0.15);
+    nextBeat=AC.currentTime+0.2;beatIdx++;
+  }
+}
+
+function lHi(){try{return parseInt(localStorage.getItem('menemen5Hi'))||0}catch(e){return 0}}
+function sHi(){try{localStorage.setItem('menemen5Hi',G.hi)}catch(e){}}
+
+function reset(){
+  G={
+   phase:-2,is:0,it:0,
+   playerX:W/2,playerY:H-120,
+   score:0,hi:lHi(),
+   obstacles:[],items:[],bullets:[],pts:[],trees:[],
+   egg:0,tom:0,pep:0,
+   lives:3,iframes:0,
+   shake:0,overT:0,
+   keys:{l:0,r:0,shoot:0},
+   shootDelay:0,spawnTimer:80,diff:1,
+   bossActive:false,bossHP:0,bossMaxHP:30,bossX:W/2,bossY:-80,bossDir:1,bossPhase:0,nextBoss:1500,
+   hikeDistance:0,walkFrame:0,
+   hasBackpack:true
+  };
+  // Init trees
+  for(let i=0;i<15;i++){
+    G.trees.push({
+      x:Math.random()<0.5?20+Math.random()*80:W-100-Math.random()*80,
+      y:Math.random()*H,
+      h:40+Math.random()*30,
+      type:Math.floor(Math.random()*3)
+    });
+  }
+}
+
+function ab(ax,ay,aw,ah,bx,by,bw,bh){return ax<bx+bw&&ax+aw>bx&&ay<by+bh&&ay+ah>by}
+function aP(x,y,n,c,s){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,v=1+Math.random()*(s||3);G.pts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-1,life:30+Math.random()*20,max:50,c,sz:2+Math.random()*3})}}
+function uP(){for(let i=G.pts.length-1;i>=0;i--){const p=G.pts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.1;p.life--;if(p.life<=0)G.pts.splice(i,1)}}
+
+function drawHiker(x,y){
+  X.save();X.translate(x,y);
+  const wf=G.walkFrame;
+  const legOff=Math.sin(wf*0.3)*4;
+  
+  // Backpack
+  if(G.hasBackpack){
+    X.fillStyle='#8D6E63';X.fillRect(-18,-18,8,22);
+    X.fillStyle='#795548';X.fillRect(-18,-18,8,3);X.fillRect(-18,1,8,3);
+  }
+  
+  // Legs (walking animation)
+  X.fillStyle='#5D4037';
+  X.fillRect(-8,5,6,18+legOff);
+  X.fillRect(2,5,6,18-legOff);
+  
+  // Boots
+  X.fillStyle='#3E2723';
+  X.fillRect(-9,22+legOff,8,4);
+  X.fillRect(1,22-legOff,8,4);
+  
+  // Body (hiking jacket)
+  X.fillStyle='#2E7D32';X.fillRect(-12,-22,24,28);
+  X.fillStyle='#1B5E20';X.fillRect(-12,-22,4,28);X.fillRect(8,-22,4,28);
+  X.fillStyle='#4CAF50';X.fillRect(-12,-5,24,3);
+  
+  // Arms
+  X.fillStyle='#388E3C';
+  X.fillRect(-16,-18,4,16);
+  X.fillRect(12,-18,4,16);
+  
+  // Head
+  X.fillStyle='#FFE0BD';
+  X.beginPath();X.arc(0,-30,12,0,Math.PI*2);X.fill();
+  
+  // Hiking hat
+  X.fillStyle='#795548';
+  X.beginPath();X.ellipse(0,-38,16,4,0,0,Math.PI*2);X.fill();
+  X.fillRect(-10,-44,20,8);
+  X.fillStyle='#8D6E63';X.fillRect(-10,-38,20,3);
+  
+  // Eyes
+  X.fillStyle='#1A1A1A';
+  X.fillRect(-5,-32,3,3);
+  X.fillRect(2,-32,3,3);
+  
+  // Smile
+  X.strokeStyle='#1A1A1A';X.lineWidth=1;
+  X.beginPath();X.arc(0,-26,5,0,Math.PI);X.stroke();
+  
+  X.restore();
+}
+
+function drawTree(t){
+  const x=t.x,y=t.y;
+  // Trunk
+  X.fillStyle='#5D4037';X.fillRect(x+8,y+20,6,t.h-20);
+  // Foliage
+  X.fillStyle=['#2E7D32','#388E3C','#43A047'][t.type];
+  X.beginPath();X.arc(x+11,y+10,18,0,Math.PI*2);X.fill();
+  X.beginPath();X.arc(x+5,y,14,0,Math.PI*2);X.fill();
+  X.beginPath();X.arc(x+17,y+5,15,0,Math.PI*2);X.fill();
+}
+
+function drawTrail(){
+  // Background gradient (mountain sky)
+  const grad=X.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'#87CEEB');
+  grad.addColorStop(0.4,'#B3E5FC');
+  grad.addColorStop(0.6,'#81C784');
+  grad.addColorStop(1,'#4CAF50');
+  X.fillStyle=grad;X.fillRect(0,0,W,H);
+  
+  // Mountains in background
+  X.fillStyle='#607D8B';
+  X.beginPath();X.moveTo(0,150);X.lineTo(100,80);X.lineTo(200,130);X.lineTo(300,60);X.lineTo(400,110);X.lineTo(500,70);X.lineTo(500,150);X.fill();
+  X.fillStyle='#78909C';
+  X.beginPath();X.moveTo(0,180);X.lineTo(80,120);X.lineTo(160,160);X.lineTo(250,100);X.lineTo(350,140);X.lineTo(450,90);X.lineTo(500,130);X.lineTo(500,180);X.fill();
+  
+  // Trail path (dirt road)
+  X.fillStyle='#8D6E63';X.fillRect(W/2-60,0,120,H);
+  X.fillStyle='#795548';
+  for(let i=0;i<H;i+=40){
+    const yy=(i+G.hikeDistance*2)%H;
+    X.fillRect(W/2-58,yy,116,2);
+  }
+  
+  // Grass on sides
+  X.fillStyle='#66BB6A';
+  for(let i=0;i<W/2-70;i+=15){
+    const yy=(i*3+G.hikeDistance*3)%H;
+    X.fillRect(i,yy,8,3);
+    X.fillRect(W-i-8,yy,8,3);
+  }
+  
+  // Trees
+  for(const t of G.trees){
+    drawTree(t);
+  }
+}
+
+function drawObstacle(o){
+  const x=o.x,y=o.y;
+  if(o.type==='rock'){
+    X.fillStyle='#757575';
+    X.beginPath();
+    X.moveTo(x,y+20);X.lineTo(x+5,y);X.lineTo(x+25,y-5);X.lineTo(x+40,y+5);X.lineTo(x+35,y+20);X.fill();
+    X.fillStyle='#9E9E9E';
+    X.beginPath();X.arc(x+15,y+8,6,0,Math.PI*2);X.fill();
+  }else if(o.type==='log'){
+    X.fillStyle='#5D4037';X.fillRect(x,y,60,12);
+    X.fillStyle='#4E342E';X.beginPath();X.arc(x+6,y+6,6,0,Math.PI*2);X.fill();
+    X.beginPath();X.arc(x+54,y+6,6,0,Math.PI*2);X.fill();
+  }else if(o.type==='mushroom'){
+    X.fillStyle='#FFF9C4';X.fillRect(x+8,y+8,8,16);
+    X.fillStyle='#E53935';X.beginPath();X.ellipse(x+12,y+8,14,10,0,Math.PI,0);X.fill();
+    X.fillStyle='#FFF';X.beginPath();X.arc(x+8,y+2,3,0,Math.PI*2);X.fill();
+    X.beginPath();X.arc(x+16,y+4,2,0,Math.PI*2);X.fill();
+  }else if(o.type==='bear'){
+    // Bear obstacle (moves side to side)
+    const wob=Math.sin(Date.now()*0.005)*10;
+    X.fillStyle='#5D4037';
+    X.beginPath();X.ellipse(x+20+wob,y+20,20,15,0,0,Math.PI*2);X.fill();
+    X.fillStyle='#4E342E';
+    X.beginPath();X.arc(x+15+wob,y+5,12,0,Math.PI*2);X.fill();
+    X.fillStyle='#1A1A1A';
+    X.beginPath();X.arc(x+12+wob,y+2,2,0,Math.PI*2);X.fill();
+    X.beginPath();X.arc(x+18+wob,y+2,2,0,Math.PI*2);X.fill();
+  }else if(o.type==='boss'){
+    drawBoss(o);
+  }
+}
+
+function drawBoss(b){
+  const x=b.x,y=b.y;
+  // Giant Trail Boss - Wobbly Mountain Yeti
+  const wob=Math.sin(Date.now()*0.003)*5;
+  
+  // Body
+  X.fillStyle='#B0BEC5';
+  X.beginPath();X.ellipse(x+40,y+40+wob,40,45,0,0,Math.PI*2);X.fill();
+  
+  // Fur texture
+  X.fillStyle='#90A4AE';
+  for(let i=0;i<8;i++){
+    const fx=x+15+Math.random()*50,fy=y+15+Math.random()*50;
+    X.beginPath();X.arc(fx,fy+wob,5,0,Math.PI*2);X.fill();
+  }
+  
+  // Eyes (angry)
+  X.fillStyle='#FFF';
+  X.beginPath();X.arc(x+25,y+25+wob,10,0,Math.PI*2);X.fill();
+  X.beginPath();X.arc(x+55,y+25+wob,10,0,Math.PI*2);X.fill();
+  X.fillStyle='#F44336';
+  X.beginPath();X.arc(x+25,y+25+wob,5,0,Math.PI*2);X.fill();
+  X.beginPath();X.arc(x+55,y+25+wob,5,0,Math.PI*2);X.fill();
+  
+  // Angry eyebrows
+  X.strokeStyle='#000';X.lineWidth=3;
+  X.beginPath();X.moveTo(x+15,y+15+wob);X.lineTo(x+30,y+20+wob);X.stroke();
+  X.beginPath();X.moveTo(x+65,y+15+wob);X.lineTo(x+50,y+20+wob);X.stroke();
+  
+  // Mouth
+  X.fillStyle='#424242';
+  X.beginPath();X.arc(x+40,y+50+wob,12,0,Math.PI);X.fill();
+  X.fillStyle='#FFF';
+  X.fillRect(x+32,y+48+wob,4,6);X.fillRect(x+44,y+48+wob,4,6);
+  
+  // Arms
+  X.fillStyle='#78909C';
+  X.fillRect(x-5,y+30+wob,15,30);
+  X.fillRect(x+70,y+30+wob,15,30);
+}
+
+function drawItem(item){
+  const x=item.x,y=item.y;
+  X.fillStyle=item.type==='egg'?'rgba(255,255,230,.2)':item.type==='tomato'?'rgba(255,80,60,.15)':'rgba(80,200,80,.15)';
+  X.beginPath();X.arc(x,y,14,0,Math.PI*2);X.fill();
+  
+  if(item.type==='egg'){
+    X.fillStyle='#FFFDE7';X.beginPath();X.ellipse(x,y,7,9,0,0,Math.PI*2);X.fill();
+    X.fillStyle='#FFF9C4';X.beginPath();X.ellipse(x-2,y-2,3,4,0,0,Math.PI*2);X.fill();
+  }else if(item.type==='tomato'){
+    X.fillStyle='#E53935';X.beginPath();X.arc(x,y,8,0,Math.PI*2);X.fill();
+    X.fillStyle='#4CAF50';X.fillRect(x-1.5,y-11,3,4);
+  }else if(item.type==='pepper'){
+    X.fillStyle='#43A047';X.beginPath();X.moveTo(x,y-9);X.bezierCurveTo(x+8,y-5,x+7,5,x,9);X.bezierCurveTo(x-7,5,x-8,-5,x,y-9);X.fill();
+    X.fillStyle='#2E7D32';X.fillRect(x-1,y-12,2,4);
+  }else if(item.type==='heart'){
+    X.fillStyle='#E53935';X.beginPath();X.moveTo(x,y+6);X.bezierCurveTo(x-10,y-2,x-10,y-10,x,y-5);X.bezierCurveTo(x+10,y-10,x+10,y-2,x,y+6);X.fill();
+  }
+}
+
+function drawHUD(){
+  X.font='bold 10px "Press Start 2P"';X.textAlign='left';X.fillStyle='rgba(255,255,255,.8)';X.fillText('TRAIL',12,22);X.fillStyle='#FFF';X.fillText(String(G.score)+'m',12,40);
+  X.textAlign='right';X.fillStyle='rgba(255,255,255,.8)';X.fillText('RECORD',W-12,22);X.fillStyle='#8BC34A';X.fillText(String(G.hi)+'m',W-12,40);
+  
+  // Lives
+  for(let i=0;i<3;i++){
+    X.fillStyle=i<G.lives?'#FF1744':'rgba(255,255,255,.15)';
+    const hx=W/2-20+i*20,hy=28;
+    X.beginPath();X.moveTo(hx,hy+4);X.bezierCurveTo(hx-8,hy-4,hx-8,hy-12,hx,hy-6);X.bezierCurveTo(hx+8,hy-12,hx+8,hy-4,hx,hy+4);X.fill();
+  }
+  
+  X.textAlign='left';const ix=12,iy=58;
+  X.fillStyle=G.egg>0?'#FFFF00':'rgba(255,255,255,.3)';X.fillText('🥚'+G.egg,ix,iy);
+  X.fillStyle=G.tom>0?'#FF3D00':'rgba(255,255,255,.3)';X.fillText('🍅'+G.tom,ix+60,iy);
+  X.fillStyle=G.pep>0?'#00E676':'rgba(255,255,255,.3)';X.fillText('🌶'+G.pep,ix+120,iy);
+  
+  // Boss HP bar
+  if(G.bossActive){
+    const bw=300,bh=12,bx=(W-bw)/2,by=50;
+    X.fillStyle='rgba(255,255,255,0.2)';X.fillRect(bx,by,bw,bh);
+    X.fillStyle='#F44336';X.fillRect(bx,by,(G.bossHP/G.bossMaxHP)*bw,bh);
+    X.strokeStyle='#fff';X.lineWidth=2;X.strokeRect(bx,by,bw,bh);
+    X.font='8px "Press Start 2P"';X.textAlign='center';X.fillStyle='#fff';X.fillText('TRAIL BOSS',W/2,by+25);
+  }
+}
+
+function drawTitle(){
+  X.fillStyle='rgba(0,0,0,0.6)';X.fillRect(0,0,W,H);
+  X.textAlign='center';
+  X.font='bold 28px "Press Start 2P"';X.fillStyle='#4CAF50';X.fillText('MOUNTAIN',W/2+2,H/2-78);X.fillStyle='#8BC34A';X.fillText('MOUNTAIN',W/2,H/2-80);
+  X.font='bold 24px "Press Start 2P"';X.fillStyle='#FF9800';X.fillText('MENEMEN HUNT',W/2,H/2-40);
+  X.font='9px "Press Start 2P"';X.fillStyle='#FFF';X.fillText('A Hiking Adventure',W/2,H/2-15);
+  X.font='10px "Press Start 2P"';X.fillStyle='rgba(255,255,255,0.6)';X.fillText('EPISODE V: THE TRAIL',W/2,H/2+10);
+}
+
+function drawInstructions(){
+  X.fillStyle='rgba(0,0,0,0.85)';X.fillRect(0,0,W,H);
+  X.textAlign='center';
+  X.font='bold 20px "Press Start 2P"';X.fillStyle='#4CAF50';X.fillText('TRAIL GUIDE',W/2,H/2-100);
+  X.font='10px "Press Start 2P"';X.fillStyle='#FFF';
+  X.fillText('← → to move',W/2,H/2-40);
+  X.fillText('SPACE to throw rocks',W/2,H/2-20);
+  X.fillText('Collect ingredients!',W/2,H/2+10);
+  X.fillText('Avoid obstacles!',W/2,H/2+30);
+  X.font='9px "Press Start 2P"';X.fillStyle='#FF9800';
+  X.fillText('🥚 🍅 🌶 = MENEMEN',W/2,H/2+70);
+}
+
+function update(){
+  if(G.phase===3){
+    G.overT++;
+    G.shake*=0.9;
+    return;
+  }
+  if(G.phase!==1)return;
+  
+  G.diff+=0.0004;
+  G.hikeDistance+=0.05;
+  G.walkFrame++;
+  
+  // Player movement
+  if(G.keys.l)G.playerX-=5;
+  if(G.keys.r)G.playerX+=5;
+  if(G.playerX<W/2-50)G.playerX=W/2-50;
+  if(G.playerX>W/2+50)G.playerX=W/2+50;
+  
+  // Shooting (throw rocks)
+  if(G.keys.shoot&&G.shootDelay<=0){
+    G.shootDelay=18;
+    G.bullets.push({x:G.playerX,y:G.playerY-30,vy:-10});
+    tn(400,600,.08,.08,'square');
+  }
+  if(G.shootDelay>0)G.shootDelay--;
+  
+  // Spawn obstacles
+  G.spawnTimer--;
+  if(G.spawnTimer<=0&&!G.bossActive){
+    G.spawnTimer=Math.max(40,70-G.diff*5)+Math.random()*30;
+    if(G.score>=G.nextBoss){spawnBoss();return;}
+    const types=['rock','log','mushroom','bear'];
+    const type=types[Math.floor(Math.random()*types.length)];
+    G.obstacles.push({
+      x:W/2-40+Math.random()*80,
+      y:-30,
+      type:type,
+      w:type==='bear'?40:type==='log'?60:35,
+      h:type==='bear'?40:type==='log'?12:25,
+      vx:type==='bear'?2:0
+    });
+  }
+  
+  // Spawn items
+  if(Math.random()<0.025){
+    const types=['egg','tomato','pepper'];
+    G.items.push({
+      x:W/2-30+Math.random()*60,
+      y:-15,
+      type:types[Math.floor(Math.random()*types.length)]
+    });
+  }
+  // Heart spawn (only if lives<3)
+  if(G.lives<3&&Math.random()<0.005){
+    G.items.push({x:W/2-30+Math.random()*60,y:-15,type:'heart'});
+  }
+  
+  // Update bullets
+  for(let i=G.bullets.length-1;i>=0;i--){
+    const b=G.bullets[i];
+    b.y+=b.vy;
+    if(b.y<-20){G.bullets.splice(i,1);continue;}
+    
+    // Hit boss
+    if(G.bossActive){
+      const boss=G.obstacles.find(o=>o.type==='boss');
+      if(boss&&ab(b.x-3,b.y-8,6,16,boss.x,boss.y,80,80)){
+        G.bossHP--;
+        aP(b.x,b.y,4,'#FF9800',2);
+        G.bullets.splice(i,1);
+        if(G.bossHP<=0){
+          // Boss defeated!
+          G.score+=1000;
+          aP(boss.x+40,boss.y+40,60,'#4CAF50',8);
+          sBoss();
+          G.bossActive=false;
+          G.nextBoss+=2000;
+          G.obstacles.splice(G.obstacles.indexOf(boss),1);
+          // Drop all ingredients!
+          for(let k=0;k<8;k++){
+            G.items.push({x:boss.x+Math.random()*80,y:boss.y+Math.random()*40,type:['egg','tomato','pepper'][k%3]});
+          }
+        }
+        continue;
+      }
+    }
+    
+    // Hit other obstacles
+    for(let j=G.obstacles.length-1;j>=0;j--){
+      const o=G.obstacles[j];
+      if(o.type!=='boss'&&ab(b.x-3,b.y-8,6,16,o.x,o.y,o.w,o.h)){
+        aP(o.x+o.w/2,o.y+o.h/2,10,'#795548',4);
+        G.obstacles.splice(j,1);
+        G.bullets.splice(i,1);
+        G.score+=5;
+        break;
+      }
+    }
+  }
+  
+  // Update obstacles
+  for(let i=G.obstacles.length-1;i>=0;i--){
+    const o=G.obstacles[i];
+    o.y+=2+G.diff*0.5;
+    if(o.type==='bear')o.x+=o.vx;
+    if(o.type==='boss'){
+      o.x+=o.vx;
+      if(o.x<30||o.x>W-110)o.vx*=-1;
+    }
+    if(o.y>H+40){
+      if(o.type==='boss'){G.bossActive=false;G.nextBoss+=500;}
+      G.obstacles.splice(i,1);continue;
+    }
+    
+    // Hit player
+    if(G.iframes<=0&&ab(G.playerX-12,G.playerY-25,24,35,o.x,o.y,o.w,o.h)){
+      G.lives--;G.iframes=60;G.shake=8;sHit();
+      aP(G.playerX,G.playerY,20,'#FF5722',5);
+      if(G.lives<=0){
+        G.phase=3;
+        if(G.score>G.hi){G.hi=G.score;sHi();}
+      }
+      if(o.type!=='boss'){G.obstacles.splice(i,1);}
+    }
+  }
+  
+  // Update items
+  for(let i=G.items.length-1;i>=0;i--){
+    const item=G.items[i];
+    item.y+=2;
+    if(item.y>H+20){G.items.splice(i,1);continue;}
+    
+    // Collect
+    if(Math.abs(item.x-G.playerX)<22&&Math.abs(item.y-G.playerY)<28){
+      if(item.type==='heart'){
+        if(G.lives<3){G.lives++;G.iframes=30;aP(item.x,item.y,10,'#E53935',5);tn(600,900,.12,.18);}
+      }else{
+        if(item.type==='egg'){G.egg++;G.score+=15;}
+        else if(item.type==='tomato'){G.tom++;G.score+=20;}
+        else if(item.type==='pepper'){G.pep++;G.score+=25;}
+        sCollect();
+        aP(item.x,item.y,8,item.type==='egg'?'#FFFDE7':item.type==='tomato'?'#E53935':'#43A047',4);
+      }
+      G.items.splice(i,1);
+    }
+  }
+  
+  // Update trees (scrolling)
+  for(const t of G.trees){
+    t.y+=1.5+G.diff*0.3;
+    if(t.y>H+40){
+      t.y=-40;
+      t.x=Math.random()<0.5?20+Math.random()*80:W-100-Math.random()*80;
+      t.h=40+Math.random()*30;
+    }
+  }
+  
+  if(G.iframes>0)G.iframes--;
+  if(G.shake>0.1)G.shake*=0.9;else G.shake=0;
+  uP();
+}
+
+function spawnBoss(){
+  G.bossActive=true;
+  G.bossHP=G.bossMaxHP;
+  G.obstacles.push({
+    x:W/2-40,y:-80,type:'boss',w:80,h:80,
+    vx:2,vy:0.3
+  });
+  sBoss();
+}
+
+function drawGameOver(){
+  X.fillStyle='rgba(0,0,0,0.7)';X.fillRect(0,0,W,H);
+  
+  // Campfire scene
+  X.fillStyle='#5D4037';X.fillRect(W/2-20,H/2+20,40,10);
+  X.fillStyle='#FF5722';
+  X.beginPath();X.moveTo(W/2-15,H/2+20);X.lineTo(W/2,H/2-10);X.lineTo(W/2+15,H/2+20);X.fill();
+  X.fillStyle='#FF9800';
+  X.beginPath();X.moveTo(W/2-10,H/2+20);X.lineTo(W/2,H/2);X.lineTo(W/2+10,H/2+20);X.fill();
+  X.fillStyle='#FFEB3B';
+  X.beginPath();X.moveTo(W/2-6,H/2+20);X.lineTo(W/2,H/2+5);X.lineTo(W/2+6,H/2+20);X.fill();
+  
+  // Ibo and Iggy sitting
+  drawHiker(W/2-50,H/2+15);
+  drawHiker(W/2+50,H/2+15);
+  
+  X.textAlign='center';
+  X.font='bold 20px "Press Start 2P"';X.fillStyle='#4CAF50';X.fillText('TRAIL REST',W/2,H/2-60);
+  X.font='bold 12px "Press Start 2P"';X.fillStyle='#FFF';X.fillText('DISTANCE: '+G.score+'m',W/2,H/2-30);
+  X.fillStyle='#8BC34A';X.font='bold 10px "Press Start 2P"';X.fillText('RECORD: '+G.hi+'m',W/2,H/2-5);
+  
+  if(G.overT>40){
+    X.font='italic 10px "Press Start 2P"';X.fillStyle='#FF9800';
+    X.fillText('Rest and try again...',W/2,H/2+60);
+  }
+  if(Math.sin(Date.now()*0.005)>0.2){
+    X.font='bold 9px "Press Start 2P"';X.fillStyle='#FFF';
+    X.fillText('Press SPACE to Hike Again',W/2,H/2+85);
+  }
+}
+
+function frame(){
+  update();
+  const sh=G.shake>0.3,sx=sh?(Math.random()-0.5)*G.shake:0,sy=sh?(Math.random()-0.5)*G.shake:0;
+  X.save();X.translate(sx,sy);
+  
+  drawTrail();
+  
+  if(G.phase===-2){
+    drawTitle();
+  }else if(G.phase===0){
+    drawInstructions();
+  }else if(G.phase===1||G.phase===3){
+    // Draw items
+    for(const item of G.items)drawItem(item);
+    
+    // Draw obstacles
+    for(const o of G.obstacles)drawObstacle(o);
+    
+    // Draw bullets (thrown rocks)
+    X.fillStyle='#9E9E9E';
+    for(const b of G.bullets){
+      X.beginPath();X.arc(b.x,b.y,4,0,Math.PI*2);X.fill();
+      X.fillStyle='#BDBDBD';X.beginPath();X.arc(b.x-1,b.y-1,2,0,Math.PI*2);X.fill();
+      X.fillStyle='#9E9E9E';
+    }
+    
+    // Draw player
+    if(G.iframes<=0||Math.floor(G.iframes/4)%2===0){
+      drawHiker(G.playerX,G.playerY);
+    }
+    
+    // Draw particles
+    for(const p of G.pts){
+      X.globalAlpha=p.life/p.max;X.fillStyle=p.c;X.fillRect(p.x-p.sz/2,p.y-p.sz/2,p.sz,p.sz);
+    }
+    X.globalAlpha=1;
+    
+    drawHUD();
+    
+    if(G.phase===3)drawGameOver();
+  }
+  
+  X.restore();
+  requestAnimationFrame(frame);
+  playMusic();
+}
+
+function handleK(e,v){
+  if(['Space','ArrowUp','KeyW'].includes(e.code)){
+    if(v&&G.phase===-2){showIntro();}
+    else if(v&&G.phase===0){startLevel();}
+    else if(v&&G.phase===3&&G.overT>30){reset();document.getElementById('btn1').style.display='none';showIntro();}
+    else G.keys.shoot=v;
+    e.preventDefault();
+  }
+  if(e.code==='ArrowLeft'||e.code==='KeyA')G.keys.l=v;
+  if(e.code==='ArrowRight'||e.code==='KeyD')G.keys.r=v;
+}
+document.addEventListener('keydown',e=>handleK(e,1));
+document.addEventListener('keyup',e=>handleK(e,0));
+C.addEventListener('touchstart',e=>{
+  e.preventDefault();iA();
+  if(G.phase===-2){showIntro();}
+  else if(G.phase===0){startLevel();}
+  else if(G.phase===3&&G.overT>30){reset();document.getElementById('btn1').style.display='none';showIntro();}
+  else{
+    G.keys.shoot=1;
+    if(e.touches[0].clientX<window.innerWidth/2)G.keys.l=1;
+    else G.keys.r=1;
+  }
+},{passive:false});
+C.addEventListener('touchend',e=>{G.keys.l=0;G.keys.r=0;G.keys.shoot=0;});
+
+function showIntro(){
+  iA();
+  G.phase=0;
+  document.getElementById('btnStory').style.display='none';
+  document.getElementById('btnStart').style.display='block';
+}
+
+function startLevel(){
+  G.phase=1;
+  G.score=0;G.egg=0;G.tom=0;G.pep=0;
+  G.playerX=W/2;G.obstacles=[];G.items=[];G.bullets=[];
+  G.spawnTimer=80;G.diff=1;G.iframes=0;G.lives=3;G.shake=0;
+  G.bossActive=false;G.bossHP=0;G.nextBoss=1500;
+  G.hikeDistance=0;G.walkFrame=0;
+  document.getElementById('btnStart').style.display='none';
+}
+
+reset();frame();
+</script>
+</body>
+</html>
