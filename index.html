@@ -133,6 +133,14 @@
             box-shadow: 15px 15px 0px rgba(224,64,251,0.6);
         }
 
+        .card.game4 {
+            border-color: #FF9800;
+        }
+
+        .card.game4:hover {
+            box-shadow: 15px 15px 0px rgba(255,152,0,0.6);
+        }
+
         .card h2 {
             font-size: 1.2rem;
             margin-bottom: 20px;
@@ -178,6 +186,15 @@
                 font-size: 1.5rem;
             }
         }
+        
+        @media (max-width: 1024px) {
+            .games {
+                flex-wrap: wrap;
+            }
+            .card {
+                min-width: 45%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -199,6 +216,11 @@
                 <div class="badge">DEFEND</div>
                 <h2>GALACTIC HARVEST</h2>
                 <p>BLAST THE ASTEROIDS. HARVEST THE COSMOS.</p>
+            </a>
+            <a href="menemen4.html" class="card game4">
+                <div class="badge">FISH</div>
+                <h2>OPERATION FISH FRY</h2>
+                <p>DODGE THE DRAFT. CATCH FISH. BBQ ON THE BEACH.</p>
             </a>
         </div>
         <div class="insert-coin">SELECT PLAYER START</div>
