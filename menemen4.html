@@ -209,7 +209,8 @@ function reset(){
    shake:0, overT:0,
    keys:{l:0,r:0,cast:0},
    spawnTimer:80, diff:1,
-   currentPage:1
+   currentPage:1,
+   timer:90  // 90 second countdown
   };
   for(let i=0;i<40;i++) G.waves.push({x:i*15,y:Math.random()*20+H*0.6,w:Math.random()*40+20,h:Math.random()*10+5});
 }
@@ -255,6 +256,52 @@ function drawOcean(){
   }
 }
 
+function drawChar(x, y, isIggy){
+  X.save();
+  X.translate(x, y);
+  
+  const bodyY = -20;
+  const headY = bodyY - 18;
+  
+  // Body
+  X.fillStyle = isIggy ? '#5C4033' : '#37241A';
+  X.fillRect(-8, bodyY, 16, 20);
+  
+  // Shirt details
+  X.fillStyle = isIggy ? '#8B5A2B' : '#7B1818';
+  X.fillRect(-8, bodyY, 4, 20);
+  X.fillRect(4, bodyY, 4, 20);
+  
+  // Head
+  X.fillStyle = isIggy ? '#FFCBA4' : '#FFE0BD';
+  X.beginPath();
+  X.arc(0, headY, 10, 0, Math.PI * 2);
+  X.fill();
+  
+  // Eyes
+  X.fillStyle = '#1A1A1A';
+  X.fillRect(-4, headY - 2, 2, 2);
+  X.fillRect(2, headY - 2, 2, 2);
+  
+  // Hair
+  if(isIggy){
+    // Iggy's hat
+    X.fillStyle = '#654321';
+    X.beginPath();
+    X.ellipse(0, headY - 8, 11, 4, 0, 0, Math.PI * 2);
+    X.fill();
+    X.fillRect(-9, headY - 14, 18, 8);
+  } else {
+    // Ibo's natural hair
+    X.fillStyle = '#1A1A1A';
+    X.beginPath();
+    X.arc(0, headY - 5, 10, Math.PI, 0);
+    X.fill();
+  }
+  
+  X.restore();
+}
+
 function drawBoat(x,y){
   X.save();X.translate(x,y);
   
@@ -275,15 +322,11 @@ function drawBoat(x,y){
   X.fillStyle='#FFF';
   X.beginPath();X.moveTo(0,-38);X.lineTo(30,-10);X.lineTo(0,-10);X.fill();
   
-  // Ibo (left)
-  X.fillStyle='#FFE0BD';X.fillRect(-30,-10,10,10);
-  X.fillStyle='#1A1A1A';X.fillRect(-30,-14,10,4);
-  X.fillStyle='#8B5A2B';X.fillRect(-30,-2,10,8);
+  // Draw Ibo (left side)
+  drawChar(-25, -5, false);
   
-  // Iggy (right)
-  X.fillStyle='#FFCBA4';X.fillRect(20,-10,10,10);
-  X.fillStyle='#654321';X.fillRect(20,-14,10,4);
-  X.fillStyle='#5C4033';X.fillRect(20,-2,10,8);
+  // Draw Iggy (right side)
+  drawChar(25, -5, true);
   
   X.restore();
 }
@@ -336,8 +379,16 @@ function drawObstacle(o){
 function drawHUD(){
   X.font='bold 10px "Press Start 2P"';X.textAlign='left';X.fillStyle='rgba(255,255,255,.3)';X.fillText('CATCH',12,22);X.fillStyle='#FFF';X.fillText(String(G.score),12,40);
   X.textAlign='right';X.fillStyle='rgba(255,255,255,.3)';X.fillText('BEST',W-12,22);X.fillStyle='#FFD54F';X.fillText(String(G.hi),W-12,40);
-  for(let i=0;i<3;i++){X.fillStyle=i<G.lives?'#FF1744':'rgba(255,255,255,.1)';const hx=W/2-30+i*30,hy=14;X.beginPath();X.moveTo(hx,hy+5);X.bezierCurveTo(hx-10,hy-5,hx-10,hy-15,hx,hy-8);X.bezierCurveTo(hx+10,hy-15,hx+10,hy-5,hx,hy+5);X.fill()}
-  X.textAlign='left';const ix=12,iy=62;
+  
+  // Timer
+  X.textAlign='center';
+  X.fillStyle=G.timer<=10?'#FF5722':'rgba(255,255,255,.3)';
+  X.fillText('TIME',W/2,22);
+  X.fillStyle=G.timer<=10?'#FF5722':'#FFF';
+  X.fillText(String(G.timer),W/2,40);
+  
+  for(let i=0;i<3;i++){X.fillStyle=i<G.lives?'#FF1744':'rgba(255,255,255,.1)';const hx=W/2-30+i*30,hy=55;X.beginPath();X.moveTo(hx,hy+5);X.bezierCurveTo(hx-10,hy-5,hx-10,hy-15,hx,hy-8);X.bezierCurveTo(hx+10,hy-15,hx+10,hy-5,hx,hy+5);X.fill()}
+  X.textAlign='left';const ix=12,iy=75;
   X.fillStyle=G.fish>0?'#90CAF9':'rgba(255,255,255,.2)';X.fillText('🐟'+G.fish,ix,iy);
   X.fillStyle=G.tomato>0?'#E53935':'rgba(255,255,255,.2)';X.fillText('🍅'+G.tomato,ix+70,iy);
   X.fillStyle=G.pepper>0?'#43A047':'rgba(255,255,255,.2)';X.fillText('🌶'+G.pepper,ix+140,iy);
@@ -346,8 +397,23 @@ function drawHUD(){
 function update(){
   if(G.phase===-2) return;
   if(G.phase===-1) return;
-  if(G.phase===0) return;
+  if(G.phase===0){
+    G.it++;
+    return;
+  }
   if(G.phase===3){G.dieT++;if(G.shake>0)G.shake*=.8;return;}
+  
+  // Countdown timer
+  G.it++;
+  if(G.it%60===0 && G.it>0){
+    G.timer--;
+    if(G.timer<=0){
+      // Time's up!
+      G.phase=3;G.dieT=0;
+      if(G.score>G.hi){G.hi=G.score;sHi();}
+      return;
+    }
+  }
   
   G.diff+=0.0002;
   
@@ -373,11 +439,11 @@ function update(){
     // Check catches
     for(let i=G.fishes.length-1;i>=0;i--){
       const f=G.fishes[i];
-      if(G.lineActive && Math.abs(f.x-G.boatX)<20 && Math.abs(f.y-G.lineY)<15){
+      if(G.lineActive && Math.abs(f.x-G.boatX)<30 && Math.abs(f.y-G.lineY)<25){
         if(f.type==='fish'){G.fish++;G.score+=10;}
         else if(f.type==='tomato'){G.tomato++;G.score+=15;}
         else if(f.type==='pepper'){G.pepper++;G.score+=20;}
-        aP(f.x,f.y,8,f.type==='fish'?'#90CAF9':f.type==='tomato'?'#E53935':'#43A047',4);
+        aP(f.x,f.y,10,f.type==='fish'?'#90CAF9':f.type==='tomato'?'#E53935':'#43A047',4);
         sCatch();
         G.fishes.splice(i,1);
         G.lineActive=false;
@@ -393,22 +459,24 @@ function update(){
   // Spawn fish and items
   G.spawnTimer--;
   if(G.spawnTimer<=0){
-    G.spawnTimer=80/G.diff+Math.random()*40;
+    G.spawnTimer=Math.max(40, 80/G.diff)+Math.random()*30;
     const type=Math.random()<0.6?'fish':Math.random()<0.5?'tomato':'pepper';
-    G.fishes.push({x:40+Math.random()*(W-80),y:H*0.5+Math.random()*30,type:type,vx:(Math.random()-0.5)*2});
+    G.fishes.push({x:40+Math.random()*(W-80),y:H*0.55+Math.random()*40,type:type,vx:(Math.random()-0.5)*2.5});
   }
   
   // Spawn obstacles
-  if(Math.random()<0.01*G.diff){
+  if(Math.random()<0.012*G.diff){
     const type=Math.random()<0.5?'mine':'octopus';
-    G.obstacles.push({x:40+Math.random()*(W-80),y:H*0.55+Math.random()*50,type:type,vy:Math.random()+0.5});
+    G.obstacles.push({x:40+Math.random()*(W-80),y:-20,type:type,vy:1.5+Math.random()*1.5});
   }
   
   // Update fish
   for(let i=G.fishes.length-1;i>=0;i--){
     const f=G.fishes[i];
     f.x+=f.vx;
-    if(f.x<10||f.x>W-10) f.vx*=-1;
+    if(f.x<15||f.x>W-15) f.vx*=-1;
+    // Remove if off screen bottom
+    if(f.y>H-10) G.fishes.splice(i,1);
   }
   
   // Update obstacles
@@ -417,7 +485,7 @@ function update(){
     o.y+=o.vy;
     
     // Hit boat
-    if(G.iframes<=0 && ab(o.x-15,o.y-15,30,30, G.boatX-45,G.boatY-10,90,30)){
+    if(G.iframes<=0 && Math.abs(o.x-G.boatX)<50 && Math.abs(o.y-G.boatY)<30){
       playerHit();
       G.obstacles.splice(i,1);
       continue;
@@ -505,14 +573,20 @@ function frame(){
     // Intro pages - handled by HTML
   } else if(G.phase===0){
     // Instructions
-    X.fillStyle='rgba(0,0,0,0.8)';X.fillRect(0,0,W,H);
+    X.fillStyle='rgba(0,0,0,0.85)';X.fillRect(0,0,W,H);
     X.textAlign='center';
-    X.font='bold 22px "Press Start 2P"';X.fillStyle='#4CAF50';X.fillText('READY TO FISH!',W/2,H*0.3);
-    X.font='12px "Press Start 2P"';X.fillStyle='#FFF';
-    X.fillText('← → to move boat',W/2,H*0.4);
+    X.font='bold 20px "Press Start 2P"';X.fillStyle='#4CAF50';X.fillText('READY TO FISH!',W/2,H*0.25);
+    X.font='11px "Press Start 2P"';X.fillStyle='#FFF';
+    X.fillText('← → to move boat',W/2,H*0.38);
     X.fillText('SPACE to cast line',W/2,H*0.45);
-    X.fillText('Catch fish & ingredients',W/2,H*0.5);
-    X.fillText('Avoid mines & octopuses!',W/2,H*0.55);
+    X.fillText('Catch fish & ingredients',W/2,H*0.52);
+    X.fillText('Avoid mines & octopuses!',W/2,H*0.59);
+    X.fillStyle='#FFEB3B';X.font='bold 12px "Press Start 2P"';
+    X.fillText('TIME: 90 seconds',W/2,H*0.68);
+    if(Math.sin(Date.now()*0.005)>0.2){
+      X.font='bold 12px "Press Start 2P"';X.fillStyle='#FFF';
+      X.fillText('> PRESS SPACE TO START <',W/2,H*0.78);
+    }
   } else if(G.phase===3){
     // Game over - draw scene
     for(const o of G.obstacles) drawObstacle(o);
@@ -545,7 +619,7 @@ function handleK(e,v){
     if(v && G.phase===-2){showIntro();}
     else if(v && G.phase===0){startLevel();}
     else if(v && G.phase===3 && G.dieT>30){reset();document.getElementById('btn1').style.display='none';showIntro();}
-    else G.keys.cast=v;
+    else if(v && G.phase===1){G.keys.cast=v;}
     e.preventDefault();
   }
   if(e.code==='ArrowLeft'||e.code==='KeyA') G.keys.l=v;
@@ -595,7 +669,7 @@ function updatePage(){
 
 function startLevel(){
   G.phase=1;
-  G.score=0;G.fish=0;G.tomato=0;G.pepper=0;
+  G.score=0;G.fish=0;G.tomato=0;G.pepper=0;G.timer=90;G.it=0;
   document.getElementById('btnStart').style.display='none';
 }
 
