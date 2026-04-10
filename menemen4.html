@@ -17,12 +17,12 @@ body::before {
     z-index: 100; background-size: 100% 2px, 3px 100%; pointer-events: none;
 }
 
-#ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:300}
-#btn1, #btnStart, #btnStory{pointer-events:auto;display:none;margin-top:140px;padding:14px 28px;background:#FF9800;color:#000;text-decoration:none;font-weight:bold;border:4px solid #fff;cursor:pointer;font-family:inherit;font-size:12px;transition:0.1s;box-shadow:6px 6px 0 rgba(0,0,0,0.4)}
+#ui{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:15px;z-index:300}
+#btn1, #btnStart, #btnStory{pointer-events:auto;display:none;padding:14px 28px;background:#FF9800;color:#000;text-decoration:none;font-weight:bold;border:4px solid #fff;cursor:pointer;font-family:inherit;font-size:12px;transition:0.1s;box-shadow:6px 6px 0 rgba(0,0,0,0.4)}
 #btnStart{background:#4CAF50;color:#fff;border-color:#fff;z-index:301}
-#btnStory{display:block;margin-top:140px;z-index:301;background:#FF5722}
+#btnStory{display:block;z-index:301;background:#FF5722}
 #btnStory:hover, #btnStart:hover, #btn1:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 rgba(0,0,0,0.5)}
-#btn1{margin-top:20px;background:rgba(255,152,0,0.8);color:#fff;border-color:rgba(255,255,255,0.5)}
+#btn1{background:rgba(255,152,0,0.8);color:#fff;border-color:rgba(255,255,255,0.5)}
 </style>
 </head>
 <body>
@@ -81,7 +81,7 @@ function reset(){
    items:[], pts:[],
    fish:0, tomato:0, pepper:0,
    lives:3, iframes:0,
-   shake:0,
+   shake:0, overT:0,
    keys:{l:0,r:0},
    spawnTimer:60, diff:1,
    storyPage:1
@@ -231,7 +231,12 @@ function drawOcean(){
 }
 
 function update(){
-  if(G.phase<=0 || G.phase===3) return;
+  if(G.phase===3){
+    G.overT++;
+    G.shake*=0.9;
+    return;
+  }
+  if(G.phase!==1) return;
   
   G.diff+=0.0003;
   
@@ -326,7 +331,7 @@ function drawGameOver(){
   X.font='bold 12px "Press Start 2P"';X.fillStyle='#FFF';X.fillText('SCORE: '+G.score,W/2,H*0.32);
   X.fillStyle='#BDBDBD';X.font='bold 10px "Press Start 2P"';X.fillText('BEST: '+G.hi,W/2,H*0.36);
   
-  if(G.dieT>40){
+  if(G.overT>40){
     X.font='italic 10px "Press Start 2P"';X.fillStyle='#FFEB3B';
     X.fillText('No war, just fish and friends!',W/2,H*0.40);
   }
